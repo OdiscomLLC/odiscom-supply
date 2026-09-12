@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message })
   }
 
-  let notificationSent = false
+  let notificationStatus = 'not_configured'
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
@@ -51,17 +51,29 @@ export default async function handler(req, res) {
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       })
 
+      const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER
+      const notificationEmail = process.env.NOTIFY_EMAIL || BOM_NOTIFICATION_EMAIL
+
       await transporter.sendMail({
-        from: 'Odiscom Supply <sales@odiscom.com>',
-        to: BOM_NOTIFICATION_EMAIL,
+        from: `Odiscom Supply <${fromAddress}>`,
+        to: notificationEmail,
         replyTo: customerEmail,
         subject: `New BOM / Material Upload: ${company}`,
         text: `A new BOM or material upload request was submitted.\n\nCompany: ${company}\nContact: ${contactName || 'N/A'}\nEmail: ${customerEmail}\nPhone: ${phone || 'N/A'}\nFile: ${fileName}\nLink: ${fileUrl || 'N/A'}\nStorage Path: ${storagePath || 'N/A'}\n\nNotes:\n${notes}\n\nReview in Odiscom Supply Admin: https://www.odiscomsupply.com/admin/material-uploads`,
       })
 
-      notificationSent = true
+      await transporter.sendMail({
+        from: `Odiscom Supply <${fromAddress}>`,
+        to: customerEmail,
+        replyTo: notificationEmail,
+        subject: `Material Upload Received (${data.id})`,
+        text: `Thank you. Odiscom Supply received your material request ${data.id} for ${fileName}. Our team will review availability, verified supplier pricing, freight, and lead time before preparing a quote. Unknown costs will not be treated as $0. Please reference ${data.id} if you contact sales@odiscom.com.`,
+      })
+
+      notificationStatus = 'sent'
     } catch (notificationError) {
       console.error('BOM notification email failed', notificationError)
+      notificationStatus = 'failed'
     }
   } else {
     console.warn('BOM notification email not sent because SMTP is not configured.')
@@ -69,8 +81,10 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     success: true,
-    message: 'Material upload request received.',
-    upload: data,
-    notificationSent,
+    requestId: data.id,
+    message: notificationStatus === 'sent'
+      ? 'Material upload request received and confirmation email sent.'
+      : 'Material upload request saved, but email delivery is unavailable.',
+    notificationStatus,
   })
 }

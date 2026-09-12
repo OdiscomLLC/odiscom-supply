@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { materialUploadSizeError } from '../lib/materialUpload'
 
 const emptyForm = {
   company: '',
@@ -25,6 +26,7 @@ export default function BomUploader() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const fileInputRef = useRef(null)
 
   function updateField(field, value) {
     setForm({ ...form, [field]: value })
@@ -39,16 +41,20 @@ export default function BomUploader() {
   async function uploadFileIfNeeded() {
     if (!file) return { fileUrl: form.fileUrl, storagePath: form.storagePath, fileName: form.fileName }
 
-    if (file.size > 20 * 1024 * 1024) throw new Error('Files must be 20 MB or smaller.')
+    const sizeError = materialUploadSizeError(file.size)
+    if (sizeError) throw new Error(sizeError)
     const signResponse = await fetch('/api/material-upload-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: file.name, fileSize: file.size, company: form.company }),
+      body: JSON.stringify({ fileName: file.name, fileSize: Number.isFinite(file.size) ? file.size : null, company: form.company }),
     })
     const signed = await signResponse.json()
     if (!signed.success) throw new Error(signed.message || 'Could not prepare secure upload.')
 
-    const { error } = await supabase.storage.from('material-uploads').uploadToSignedUrl(signed.path, signed.token, file, { cacheControl: '3600' })
+    const { error } = await supabase.storage.from('material-uploads').uploadToSignedUrl(signed.path, signed.token, file, {
+      cacheControl: '3600',
+      contentType: file.type || 'application/octet-stream',
+    })
 
     if (error) throw new Error(error.message)
 
@@ -90,7 +96,10 @@ export default function BomUploader() {
 
       setForm(emptyForm)
       setFile(null)
-      setMessage('Material upload request received. Our team will review it and prepare a quote.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setMessage(data.notificationStatus === 'sent'
+        ? `Material upload request ${data.requestId} received. A confirmation email was sent.`
+        : `Material upload request ${data.requestId} was saved, but the confirmation email could not be sent. Please contact sales@odiscom.com and reference this request ID.`)
     } catch (err) {
       setLoading(false)
       setMessage(err.message || 'File upload failed. You can paste a shared file link instead.')
@@ -121,7 +130,7 @@ export default function BomUploader() {
           <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-900">Upload file</label>
-              <input type="file" onChange={handleFileChange} accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.zip" className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm" />
+              <input ref={fileInputRef} type="file" onChange={handleFileChange} accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.zip" className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm" />
               {file && <p className="mt-2 text-xs text-slate-500">Selected: {file.name}</p>}
             </div>
             <div>
