@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { broadbandCatalog } from '../data/broadbandCatalog'
 import { expandCatalogGroups } from '../data/catalogOptions'
+import { useProjectCart } from '../lib/projectCart'
 
 function ProductRow({ category, item, quantity, onChange }) {
   function update(next) {
@@ -47,6 +48,7 @@ export default function QuotePage() {
   const [quoteId, setQuoteId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { items: cartItems, clearCart } = useProjectCart()
 
   const expandedCatalog = useMemo(() => expandCatalogGroups(broadbandCatalog), [])
 
@@ -92,6 +94,25 @@ export default function QuotePage() {
       }))
     }
   }, [router.isReady, router.query.item, router.query.category, router.query.qty, router.query.sku, expandedCatalog])
+
+  useEffect(() => {
+    if (!router.isReady || router.query.cart !== '1' || !cartItems.length) return
+    setSelectedItems((current) => {
+      const next = { ...current }
+      for (const item of cartItems) {
+        const key = `${item.category}::${item.name}`
+        next[key] = {
+          category: item.category,
+          product_name: item.name,
+          product_slug: item.sku || item.key,
+          quantity: item.quantity,
+          unit: item.unit || 'each',
+          notes: item.notes || '',
+        }
+      }
+      return next
+    })
+  }, [router.isReady, router.query.cart, cartItems])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -141,6 +162,7 @@ export default function QuotePage() {
     if (data.success) {
       setSubmitted(true)
       setQuoteId(data.quoteId)
+      if (router.query.cart === '1') clearCart()
     } else {
       setError(data.error || data.message || 'Error submitting quote')
     }
