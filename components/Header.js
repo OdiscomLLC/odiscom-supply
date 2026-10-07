@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { useProjectCart } from '../lib/projectCart'
 
 export default function Header() {
+  const { lineCount } = useProjectCart()
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="bg-slate-950 text-slate-200">
@@ -31,7 +33,7 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <Link href="/shop" className="hidden rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800 hover:border-slate-400 hover:bg-slate-50 sm:inline-flex">Search catalog</Link>
-          <Link href="/quote" className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700">Get project pricing</Link>
+          <Link href="/project-cart" className="relative rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50">Project Cart{lineCount > 0 && <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-black text-white">{lineCount}</span>}</Link><Link href="/quote" className="hidden rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700 sm:inline-flex">Get project pricing</Link>
         </div>
       </div>
       <div className="border-t border-slate-100 lg:hidden">
@@ -39,7 +41,7 @@ export default function Header() {
           <Link href="/shop" className="whitespace-nowrap">Products</Link>
           <Link href="/material-upload" className="whitespace-nowrap">Upload BOM</Link>
           <Link href="/quote" className="whitespace-nowrap">Request Quote</Link>
-          <Link href="/account" className="whitespace-nowrap">Account</Link>
+          <Link href="/project-cart" className="whitespace-nowrap">Cart{lineCount > 0 ? ` (${lineCount})` : ""}</Link><Link href="/account" className="whitespace-nowrap">Account</Link>
         </nav>
       </div>
     </header>
