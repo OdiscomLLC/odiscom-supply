@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/router'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { broadbandCatalog } from '../data/broadbandCatalog'
@@ -38,6 +39,7 @@ function ProductRow({ category, item, quantity, onChange }) {
 }
 
 export default function QuotePage() {
+  const router = useRouter()
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', details: '' })
   const [selectedItems, setSelectedItems] = useState({})
   const [search, setSearch] = useState('')
@@ -47,6 +49,50 @@ export default function QuotePage() {
   const [loading, setLoading] = useState(false)
 
   const expandedCatalog = useMemo(() => expandCatalogGroups(broadbandCatalog), [])
+
+  useEffect(() => {
+    if (!router.isReady || typeof router.query.item !== 'string') return
+
+    const requestedName = router.query.item.trim()
+    const requestedCategory = typeof router.query.category === 'string' ? router.query.category.trim() : ''
+    const requestedSku = typeof router.query.sku === 'string' ? router.query.sku.trim() : ''
+    const requestedQty = Math.max(1, Number(router.query.qty || 1) || 1)
+    let matched = null
+
+    for (const group of expandedCatalog) {
+      if (requestedCategory && group.category !== requestedCategory) continue
+      const item = group.items.find((candidate) => candidate.name.toLowerCase() === requestedName.toLowerCase())
+      if (item) {
+        matched = { group, item }
+        break
+      }
+    }
+
+    setSearch(requestedName)
+
+    if (matched) {
+      const key = `${matched.group.category}::${matched.item.name}`
+      setSelectedItems((current) => ({
+        ...current,
+        [key]: {
+          category: matched.group.category,
+          product_name: matched.item.name,
+          quantity: requestedQty,
+          unit: matched.item.unit || 'each',
+          length: matched.item.length || '',
+        },
+      }))
+    } else {
+      const requestedLine = ['Requested catalog item: ' + requestedName, requestedSku ? 'SKU/Part: ' + requestedSku : '', requestedCategory ? 'Category: ' + requestedCategory : '', 'Quantity: ' + requestedQty]
+        .filter(Boolean)
+        .join(' | ')
+      setForm((current) => ({
+        ...current,
+        details: current.details.includes(requestedLine) ? current.details : [requestedLine, current.details].filter(Boolean).join('\n'),
+      }))
+    }
+  }, [router.isReady, router.query.item, router.query.category, router.query.qty, router.query.sku, expandedCatalog])
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   function updateItem(category, item, quantity) {
