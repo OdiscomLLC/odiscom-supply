@@ -30,6 +30,7 @@ const emptyProduct = {
 
 export default function SupplierProducts() {
   const [supplier, setSupplier] = useState(null)
+  const [userId, setUserId] = useState(null)
   const [products, setProducts] = useState([])
   const [form, setForm] = useState(emptyProduct)
   const [search, setSearch] = useState('')
@@ -40,17 +41,23 @@ export default function SupplierProducts() {
 
   async function loadData() {
     const { data: sessionData } = await supabase.auth.getSession()
-    const email = sessionData.session?.user?.email
-    if (!email) {
+    const sessionUser = sessionData.session?.user
+    const email = sessionUser?.email
+    if (!email || !sessionUser?.id) {
       setLoading(false)
       return
     }
+    setUserId(sessionUser.id)
 
-    const { data: supplierData } = await supabase.from('suppliers').select('*').eq('email', email).maybeSingle()
+    let { data: supplierData } = await supabase.from('suppliers').select('*').eq('owner_user_id', sessionUser.id).maybeSingle()
+    if (!supplierData) {
+      const fallback = await supabase.from('suppliers').select('*').eq('email', email).maybeSingle()
+      supplierData = fallback.data
+    }
     setSupplier(supplierData || null)
 
     if (supplierData?.name) {
-      const { data: productData } = await supabase.from('products').select('*').eq('supplier_name', supplierData.name).order('created_at', { ascending: false })
+      const { data: productData } = await supabase.from('products').select('*').eq('supplier_user_id', sessionUser.id).order('created_at', { ascending: false })
       setProducts(productData || [])
     }
     setLoading(false)
@@ -66,11 +73,11 @@ export default function SupplierProducts() {
   async function saveProduct(e) {
     e.preventDefault()
     setMessage('')
-    if (!supplier?.name) return setMessage('Create or link your supplier profile first.')
+    if (!supplier?.name || !userId) return setMessage('Create or link your supplier profile first.')
     const cleanSlug = slugify(form.slug || form.name || form.sku)
     if (!cleanSlug) return setMessage('Product needs a valid slug.')
 
-    const { error } = await supabase.from('products').insert([{ ...form, slug: cleanSlug, supplier_name: supplier.name, manufacturer: form.manufacturer.trim() || null, status: 'supplier_review', price: amount(form.price), cost: amount(form.cost) }])
+    const { error } = await supabase.from('products').insert([{ ...form, slug: cleanSlug, supplier_name: supplier.name, supplier_user_id: userId, manufacturer: form.manufacturer.trim() || null, status: 'supplier_review', supplier_status: 'supplier_review', price: amount(form.price), cost: amount(form.cost) }])
     if (error) return setMessage(error.message)
     setForm(emptyProduct)
     setMessage('Product submitted for Odiscom review.')
