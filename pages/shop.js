@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import { supabase } from '../lib/supabase'
 import { broadbandCatalog } from '../data/broadbandCatalog'
 import { expandCatalogItem } from '../data/catalogOptions'
+import { useProjectCart } from '../lib/projectCart'
 
 function slugify(value) {
   return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -33,6 +34,15 @@ function catalogProductsFromStaticList() {
 }
 
 function ProductCard({ product }) {
+  const { addItem } = useProjectCart()
+  const [added, setAdded] = useState(false)
+
+  function addToProject() {
+    addItem({ name: product.name, sku: product.sku, category: product.category, manufacturer: product.manufacturer, unit: product.unit, quantity: 1, source: product.catalogOnly ? 'request-catalog' : 'product' })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1500)
+  }
+
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
       <div className="relative h-44 overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50">
@@ -72,8 +82,11 @@ function ProductCard({ product }) {
               <div className="mt-1 font-bold text-slate-900">Project based</div>
             </div>
           </div>
-          <Link href={productHref(product)} className="mt-5 block rounded-xl bg-slate-950 px-4 py-3 text-center text-sm font-bold text-white transition group-hover:bg-blue-600">
-            {product.catalogOnly ? 'Add to quote request' : 'View product'}
+          <button type="button" onClick={addToProject} className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-blue-700">
+            {added ? 'Added to project' : 'Add to project cart'}
+          </button>
+          <Link href={productHref(product)} className="mt-2 block rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-bold text-slate-800 transition hover:bg-slate-50">
+            {product.catalogOnly ? 'Quote this item now' : 'View product'}
           </Link>
         </div>
       </div>
