@@ -4,6 +4,7 @@ import Footer from '../../components/Footer'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import { useProjectCart } from '../../lib/projectCart'
 
 function money(value) {
   if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return 'Not priced'
@@ -15,6 +16,9 @@ export default function ProductPage() {
   const { slug } = router.query
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [quantity, setQuantity] = useState(1)
+  const [added, setAdded] = useState(false)
+  const { addItem } = useProjectCart()
 
   useEffect(() => {
     if (!slug) return
@@ -93,7 +97,11 @@ export default function ProductPage() {
               <p className="mt-3 text-sm leading-6 text-slate-600">Final pricing is reviewed based on quantity, freight, lead time, sourcing options, and project requirements.</p>
               <div className="mt-6 space-y-3">
                 {product.spec_sheet_url && <a href={product.spec_sheet_url} target="_blank" className="block rounded-xl bg-slate-100 px-5 py-3 text-center text-sm font-semibold text-slate-950 hover:bg-slate-200">View Spec Sheet</a>}
-                <Link href={`/quote?item=${encodeURIComponent(product.name)}&category=${encodeURIComponent(product.category || '')}&sku=${encodeURIComponent(product.sku || '')}`} className="block rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700">Add to Quote Request</Link>
+                <div className="grid grid-cols-[110px_1fr] gap-3">
+                  <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Math.max(1, Number(e.target.value || 1)))} className="rounded-xl border border-slate-300 px-3 text-center text-sm font-bold" aria-label="Requested quantity" />
+                  <button type="button" onClick={() => { addItem({ name: product.name, sku: product.sku, category: product.category, manufacturer: product.manufacturer, unit: product.unit, quantity, source: 'product' }); setAdded(true); setTimeout(() => setAdded(false), 1500) }} className="rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700">{added ? 'Added to Project' : 'Add to Project Cart'}</button>
+                </div>
+                <Link href={`/quote?item=${encodeURIComponent(product.name)}&category=${encodeURIComponent(product.category || '')}&sku=${encodeURIComponent(product.sku || '')}&qty=${quantity}`} className="block rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Quote This Item Now</Link>
                 <Link href="/material-upload" className="block rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Upload BOM Instead</Link>
               </div>
               <div className="mt-6 rounded-2xl bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white"><div className="font-bold">Need a private-label or bulk program?</div><p className="mt-2 text-sm text-slate-300">Ask about branded reels, custom cable sourcing, and deployment supply packages.</p></div>
