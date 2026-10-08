@@ -41,7 +41,7 @@ function ProductRow({ category, item, quantity, onChange }) {
 
 export default function QuotePage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', details: '' })
+  const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', details: '', po_number: '', tax_status: 'standard', freight_preference: 'quote-best-option', delivery_location: '', requested_delivery: '', payment_preference: 'invoice-or-po' })
   const [selectedItems, setSelectedItems] = useState({})
   const [search, setSearch] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -153,7 +153,24 @@ export default function QuotePage() {
     const res = await fetch('/api/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, selectedItems: selectedList }),
+      body: JSON.stringify({
+        name: form.name,
+        company: form.company,
+        email: form.email,
+        phone: form.phone,
+        details: [
+          form.details,
+          '',
+          'Procurement Details:',
+          form.po_number ? 'PO / Reference: ' + form.po_number : '',
+          'Tax status: ' + form.tax_status,
+          'Freight preference: ' + form.freight_preference,
+          form.delivery_location ? 'Delivery location: ' + form.delivery_location : '',
+          form.requested_delivery ? 'Requested delivery: ' + form.requested_delivery : '',
+          'Payment preference: ' + form.payment_preference,
+        ].filter(Boolean).join('\n'),
+        selectedItems: selectedList,
+      }),
     })
 
     const data = await res.json()
@@ -249,7 +266,31 @@ export default function QuotePage() {
                         <input name="company" placeholder="Company" required onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
                         <input name="email" type="email" placeholder="Email" required onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
                         <input name="phone" placeholder="Phone" onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
-                        <textarea name="details" placeholder="Project location, delivery requirements, requested brands, alternates, deadlines, freight considerations, or anything else we should know..." rows="7" onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <input name="po_number" value={form.po_number} onChange={handleChange} placeholder="PO / project / requisition number (optional)" className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <select name="tax_status" value={form.tax_status} onChange={handleChange} className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500">
+                            <option value="standard">Standard taxable purchase</option>
+                            <option value="tax-exempt">Tax-exempt — certificate available</option>
+                            <option value="resale">Resale — certificate available</option>
+                            <option value="government">Government / public entity</option>
+                          </select>
+                          <select name="payment_preference" value={form.payment_preference} onChange={handleChange} className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500">
+                            <option value="invoice-or-po">Invoice / purchase order</option>
+                            <option value="ach">ACH</option>
+                            <option value="card">Card / Stripe</option>
+                            <option value="terms">Request payment terms</option>
+                          </select>
+                        </div>
+                        <select name="freight_preference" value={form.freight_preference} onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500">
+                          <option value="quote-best-option">Quote best freight option</option>
+                          <option value="prepaid-add">Prepay and add freight</option>
+                          <option value="customer-account">Use buyer freight account</option>
+                          <option value="jobsite-delivery">Coordinate jobsite delivery</option>
+                          <option value="pickup">Pickup if available</option>
+                        </select>
+                        <input name="delivery_location" value={form.delivery_location} onChange={handleChange} placeholder="Delivery city/state or jobsite address" className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <input name="requested_delivery" value={form.requested_delivery} onChange={handleChange} placeholder="Requested delivery date / required-on-site date" className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <textarea name="details" value={form.details} placeholder="Requested brands, alternates, compliance requirements, delivery restrictions, deadlines, or anything else we should know..." rows="6" onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
                       </div>
                       <button type="submit" disabled={loading} className="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">{loading ? 'Submitting quote request...' : 'Submit quote request'}</button>
                       <p className="mt-3 text-xs leading-5 text-slate-500">No public pricing is displayed. Final quotes may vary based on quantity, freight, lead time, approved alternates, and project requirements.</p>
