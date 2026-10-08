@@ -35,6 +35,7 @@ export default function OrderDetail() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [fulfillment, setFulfillment] = useState({ fulfillment_status:'pending', carrier:'', tracking_number:'', tracking_url:'', expected_delivery:'' })
 
   useEffect(() => { if (id) loadOrder() }, [id])
 
@@ -59,6 +60,7 @@ export default function OrderDetail() {
     const { data: itemsData,error:itemsError } = await supabase.from('order_items').select('*').eq('order_id', id).order('created_at', { ascending: true })
     if(itemsError) {setOrder(orderData);setItems([]);setMessage('Order items could not be loaded. Margin is unavailable.');setLoading(false);return}
     setOrder(orderData)
+    setFulfillment({ fulfillment_status:orderData.fulfillment_status || 'pending', carrier:orderData.carrier || '', tracking_number:orderData.tracking_number || '', tracking_url:orderData.tracking_url || '', expected_delivery:orderData.expected_delivery || '' })
     setItems(itemsData || [])
     setLoading(false)
   }
@@ -68,6 +70,60 @@ export default function OrderDetail() {
     if (error) return setMessage(error.message)
     setOrder({ ...order, status: newStatus })
     setMessage('Order status updated.')
+  }
+
+  async function saveFulfillment(e) {
+    e.preventDefault()
+    setMessage('')
+    const previousStatus = order.fulfillment_status || 'pending'
+    const now = new Date().toISOString()
+    const patch = {
+      fulfillment_status: fulfillment.fulfillment_status,
+      carrier: fulfillment.carrier || null,
+      tracking_number: fulfillment.tracking_number || null,
+      tracking_url: fulfillment.tracking_url || null,
+      expected_delivery: fulfillment.expected_delivery || null,
+      shipped_at: fulfillment.fulfillment_status === 'shipped' && !order.shipped_at ? now : order.shipped_at,
+      delivered_at: fulfillment.fulfillment_status === 'delivered' && !order.delivered_at ? now : order.delivered_at,
+    }
+
+    const { error } = await supabase.from('orders').update(patch).eq('id', id)
+    if (error) return setMessage(error.message)
+
+    if (previousStatus !== fulfillment.fulfillment_status || fulfillment.tracking_number !== (order.tracking_number || '')) {
+      const eventType = fulfillment.fulfillment_status === 'delivered'
+        ? 'delivered'
+        : fulfillment.fulfillment_status === 'shipped'
+          ? 'shipped'
+          : fulfillment.tracking_number !== (order.tracking_number || '')
+            ? 'tracking_updated'
+            : fulfillment.fulfillment_status === 'ready'
+              ? 'ready'
+              : 'sourcing'
+      const title = eventType === 'delivered' ? 'Order delivered'
+        : eventType === 'shipped' ? 'Order shipped'
+        : eventType === 'tracking_updated' ? 'Tracking updated'
+        : eventType === 'ready' ? 'Order ready'
+        : 'Fulfillment updated'
+      const detail = [
+        fulfillment.carrier ? 'Carrier: ' + fulfillment.carrier : '',
+        fulfillment.tracking_number ? 'Tracking: ' + fulfillment.tracking_number : '',
+        fulfillment.expected_delivery ? 'Expected delivery: ' + fulfillment.expected_delivery : '',
+      ].filter(Boolean).join(' • ') || 'Order fulfillment status changed to ' + fulfillment.fulfillment_status + '.'
+
+      const { error: eventError } = await supabase.from('order_events').insert([{
+        order_id:id,
+        event_type:eventType,
+        title,
+        detail,
+        visibility:'customer',
+        created_by:'admin'
+      }])
+      if (eventError) return setMessage('Fulfillment saved, but the customer timeline event could not be recorded.')
+    }
+
+    setOrder({ ...order, ...patch })
+    setMessage('Fulfillment and tracking updated.')
   }
 
   if (loading) return <AdminShell title="Order Detail"><div className="rounded-3xl bg-white p-10 text-slate-600 shadow-sm">Loading order...</div></AdminShell>
@@ -163,10 +219,34 @@ export default function OrderDetail() {
                 </select>
               </div>
 
+              <form onSubmit={saveFulfillment} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-slate-950">Customer Fulfillment & Tracking</h2>
+                <p className="mt-2 text-sm text-slate-600">Publish shipment milestones and tracking to the buyer order page.</p>
+                <div className="mt-5 space-y-3">
+                  <select value={fulfillment.fulfillment_status} onChange={(e)=>setFulfillment({...fulfillment,fulfillment_status:e.target.value})} className="w-full rounded-xl border border-slate-300 p-3 text-sm">
+                    <option value="pending">Pending</option>
+                    <option value="sourcing">Sourcing</option>
+                    <option value="ready">Ready</option>
+                    <option value="partially_shipped">Partially shipped</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="on_hold">On hold</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <input value={fulfillment.carrier} onChange={(e)=>setFulfillment({...fulfillment,carrier:e.target.value})} placeholder="Carrier" className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+                  <input value={fulfillment.tracking_number} onChange={(e)=>setFulfillment({...fulfillment,tracking_number:e.target.value})} placeholder="Tracking number" className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+                  <input value={fulfillment.tracking_url} onChange={(e)=>setFulfillment({...fulfillment,tracking_url:e.target.value})} placeholder="Tracking URL" className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+                  <input type="date" value={fulfillment.expected_delivery} onChange={(e)=>setFulfillment({...fulfillment,expected_delivery:e.target.value})} className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+                </div>
+                <button className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700">Save & publish tracking</button>
+              </form>
+
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-950">Fulfillment Checklist</h2>
-                <div className="mt-4 space-y-3 text-sm text-slate-700">
-                  {['Confirm supplier pricing', 'Confirm lead time and freight', 'Place vendor purchase order', 'Track receiving / shipping', 'Close order when fulfilled'].map((item) => <div key={item} className="rounded-2xl bg-slate-50 p-3 font-semibold">□ {item}</div>)}
+                <h2 className="text-xl font-bold text-slate-950">Payment</h2>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-2xl bg-slate-50 p-4"><div className="text-xs uppercase tracking-[0.15em] text-slate-500">Method</div><div className="mt-1 font-bold">{order.payment_method || 'unselected'}</div></div>
+                  <div className="rounded-2xl bg-slate-50 p-4"><div className="text-xs uppercase tracking-[0.15em] text-slate-500">Status</div><div className="mt-1 font-bold">{order.payment_status || 'unpaid'}</div></div>
+                  {order.po_number && <div className="rounded-2xl bg-slate-50 p-4"><div className="text-xs uppercase tracking-[0.15em] text-slate-500">PO</div><div className="mt-1 font-mono font-bold">{order.po_number}</div></div>}
                 </div>
               </div>
 

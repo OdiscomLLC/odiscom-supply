@@ -4,6 +4,7 @@ import Footer from '../../components/Footer'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import { useProjectCart } from '../../lib/projectCart'
 
 function money(value) {
   if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return 'Not priced'
@@ -15,6 +16,9 @@ export default function ProductPage() {
   const { slug } = router.query
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [quantity, setQuantity] = useState(1)
+  const [added, setAdded] = useState(false)
+  const { addItem } = useProjectCart()
 
   useEffect(() => {
     if (!slug) return
@@ -68,6 +72,10 @@ export default function ProductPage() {
                   ['Manufacturer', product.manufacturer || '-'],
                   ['Unit', product.unit || 'each'],
                   ['Lead Time', product.lead_time || 'Confirmed at quote'],
+                  ['Manufacturer Part', product.manufacturer_part_number || product.sku || '-'],
+                  ['Country of Origin', product.country_of_origin || 'Confirmed at quote'],
+                  ['TAA', product.taa_compliant === true ? 'Compliant' : product.taa_compliant === false ? 'Not confirmed compliant' : 'Not confirmed'],
+                  ['BABA', product.baba_compliant === true ? 'Compliant' : product.baba_compliant === false ? 'Not confirmed compliant' : 'Not confirmed'],
                   ['Status', product.status || 'active'],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -77,6 +85,20 @@ export default function ProductPage() {
                 ))}
               </div>
             </div>
+
+            {product.specifications && Object.keys(product.specifications).length > 0 && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-2xl font-bold text-slate-950">Specifications</h2>
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {Object.entries(product.specifications).map(([key,value])=>(
+                    <div key={key} className="rounded-2xl bg-slate-50 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{key.replaceAll('_',' ')}</div>
+                      <div className="mt-2 font-semibold text-slate-900">{String(value)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-bold text-slate-950">Common sourcing notes</h2>
@@ -93,7 +115,11 @@ export default function ProductPage() {
               <p className="mt-3 text-sm leading-6 text-slate-600">Final pricing is reviewed based on quantity, freight, lead time, sourcing options, and project requirements.</p>
               <div className="mt-6 space-y-3">
                 {product.spec_sheet_url && <a href={product.spec_sheet_url} target="_blank" className="block rounded-xl bg-slate-100 px-5 py-3 text-center text-sm font-semibold text-slate-950 hover:bg-slate-200">View Spec Sheet</a>}
-                <Link href="/quote" className="block rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700">Add to Quote Request</Link>
+                <div className="grid grid-cols-[110px_1fr] gap-3">
+                  <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Math.max(1, Number(e.target.value || 1)))} className="rounded-xl border border-slate-300 px-3 text-center text-sm font-bold" aria-label="Requested quantity" />
+                  <button type="button" onClick={() => { addItem({ name: product.name, sku: product.sku, category: product.category, manufacturer: product.manufacturer, unit: product.unit, quantity, source: 'product' }); setAdded(true); setTimeout(() => setAdded(false), 1500) }} className="rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700">{added ? 'Added to Project' : 'Add to Project Cart'}</button>
+                </div>
+                <Link href={`/quote?item=${encodeURIComponent(product.name)}&category=${encodeURIComponent(product.category || '')}&sku=${encodeURIComponent(product.sku || '')}&qty=${quantity}`} className="block rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Quote This Item Now</Link>
                 <Link href="/material-upload" className="block rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">Upload BOM Instead</Link>
               </div>
               <div className="mt-6 rounded-2xl bg-gradient-to-br from-slate-950 to-blue-950 p-5 text-white"><div className="font-bold">Need a private-label or bulk program?</div><p className="mt-2 text-sm text-slate-300">Ask about branded reels, custom cable sourcing, and deployment supply packages.</p></div>

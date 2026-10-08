@@ -31,11 +31,16 @@ export default function SupplierProfile() {
       setLoading(false)
       return
     }
-    const { data, error } = await supabase.from('suppliers').select('*').eq('email', sessionUser.email).maybeSingle()
+    let { data, error } = await supabase.from('suppliers').select('*').eq('owner_user_id', sessionUser.id).maybeSingle()
+    if (!data && !error) {
+      const fallback = await supabase.from('suppliers').select('*').eq('email', sessionUser.email).maybeSingle()
+      data = fallback.data
+      error = fallback.error
+    }
     if (error) setMessage(error.message)
     if (data) {
       setSupplierId(data.id)
-      setProfile({ ...emptyProfile, ...data })
+      setProfile({ ...emptyProfile, ...data, email: sessionUser.email })
     } else {
       setProfile({ ...emptyProfile, email: sessionUser.email })
     }
@@ -49,14 +54,27 @@ export default function SupplierProfile() {
   async function saveProfile(e) {
     e.preventDefault()
     setMessage('')
-    if (!profile.name || !profile.email) return setMessage('Supplier name and email are required.')
+    if (!profile.name || !user?.email) return setMessage('Supplier name and signed-in email are required.')
+    const editableProfile = {
+      name: profile.name,
+      contact_name: profile.contact_name || null,
+      email: user.email,
+      phone: profile.phone || null,
+      website: profile.website || null,
+      product_categories: profile.product_categories || null,
+      payment_terms: profile.payment_terms || null,
+      lead_time: profile.lead_time || null,
+      notes: profile.notes || null,
+      owner_user_id: user.id,
+      updated_at: new Date().toISOString(),
+    }
     if (supplierId) {
-      const { error } = await supabase.from('suppliers').update(profile).eq('id', supplierId)
+      const { error } = await supabase.from('suppliers').update(editableProfile).eq('id', supplierId)
       if (error) return setMessage(error.message)
       setMessage('Supplier profile updated.')
       return
     }
-    const { data, error } = await supabase.from('suppliers').insert([profile]).select().single()
+    const { data, error } = await supabase.from('suppliers').insert([editableProfile]).select().single()
     if (error) return setMessage(error.message)
     setSupplierId(data.id)
     setMessage('Supplier profile created.')
@@ -80,7 +98,7 @@ export default function SupplierProfile() {
               <input value={profile.contact_name || ''} onChange={(e) => updateField('contact_name', e.target.value)} placeholder="Primary contact" className="rounded-xl border border-slate-300 p-3 outline-none focus:border-blue-500" />
               <input value={profile.phone || ''} onChange={(e) => updateField('phone', e.target.value)} placeholder="Phone" className="rounded-xl border border-slate-300 p-3 outline-none focus:border-blue-500" />
             </div>
-            <input required type="email" value={profile.email || ''} onChange={(e) => updateField('email', e.target.value)} placeholder="Supplier login email" className="w-full rounded-xl border border-slate-300 p-3 outline-none focus:border-blue-500" />
+            <input required type="email" value={user?.email || ''} readOnly placeholder="Supplier login email" className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-slate-600" />
             <input value={profile.website || ''} onChange={(e) => updateField('website', e.target.value)} placeholder="Website" className="w-full rounded-xl border border-slate-300 p-3 outline-none focus:border-blue-500" />
             <input value={profile.product_categories || ''} onChange={(e) => updateField('product_categories', e.target.value)} placeholder="Product categories, comma separated" className="w-full rounded-xl border border-slate-300 p-3 outline-none focus:border-blue-500" />
             <div className="grid gap-4 md:grid-cols-2">

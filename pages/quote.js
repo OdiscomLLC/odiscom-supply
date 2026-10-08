@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/router'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { broadbandCatalog } from '../data/broadbandCatalog'
 import { expandCatalogGroups } from '../data/catalogOptions'
+import { useProjectCart } from '../lib/projectCart'
 
 function ProductRow({ category, item, quantity, onChange }) {
   function update(next) {
@@ -38,15 +40,85 @@ function ProductRow({ category, item, quantity, onChange }) {
 }
 
 export default function QuotePage() {
-  const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', details: '' })
+  const router = useRouter()
+  const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', details: '', po_number: '', tax_status: 'standard', freight_preference: 'quote-best-option', delivery_location: '', requested_delivery: '', payment_preference: 'invoice-or-po' })
   const [selectedItems, setSelectedItems] = useState({})
   const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [quoteId, setQuoteId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { items: cartItems, clearCart } = useProjectCart()
 
   const expandedCatalog = useMemo(() => expandCatalogGroups(broadbandCatalog), [])
+
+  useEffect(() => {
+    if (!activeCategory && expandedCatalog.length) setActiveCategory(expandedCatalog[0].category)
+  }, [activeCategory, expandedCatalog])
+
+  useEffect(() => {
+    if (!router.isReady || typeof router.query.item !== 'string') return
+
+    const requestedName = router.query.item.trim()
+    const requestedCategory = typeof router.query.category === 'string' ? router.query.category.trim() : ''
+    const requestedSku = typeof router.query.sku === 'string' ? router.query.sku.trim() : ''
+    const requestedQty = Math.max(1, Number(router.query.qty || 1) || 1)
+    let matched = null
+
+    for (const group of expandedCatalog) {
+      if (requestedCategory && group.category !== requestedCategory) continue
+      const item = group.items.find((candidate) => candidate.name.toLowerCase() === requestedName.toLowerCase())
+      if (item) {
+        matched = { group, item }
+        break
+      }
+    }
+
+    setSearch(requestedName)
+
+    if (matched) {
+      const key = `${matched.group.category}::${matched.item.name}`
+      setSelectedItems((current) => ({
+        ...current,
+        [key]: {
+          category: matched.group.category,
+          product_name: matched.item.name,
+          quantity: requestedQty,
+          unit: matched.item.unit || 'each',
+          length: matched.item.length || '',
+        },
+      }))
+    } else {
+      const requestedLine = ['Requested catalog item: ' + requestedName, requestedSku ? 'SKU/Part: ' + requestedSku : '', requestedCategory ? 'Category: ' + requestedCategory : '', 'Quantity: ' + requestedQty]
+        .filter(Boolean)
+        .join(' | ')
+      setForm((current) => ({
+        ...current,
+        details: current.details.includes(requestedLine) ? current.details : [requestedLine, current.details].filter(Boolean).join('\n'),
+      }))
+    }
+  }, [router.isReady, router.query.item, router.query.category, router.query.qty, router.query.sku, expandedCatalog])
+
+  useEffect(() => {
+    if (!router.isReady || router.query.cart !== '1' || !cartItems.length) return
+    setSelectedItems((current) => {
+      const next = { ...current }
+      for (const item of cartItems) {
+        const key = `${item.category}::${item.name}`
+        next[key] = {
+          category: item.category,
+          product_name: item.name,
+          product_slug: item.sku || item.key,
+          quantity: item.quantity,
+          unit: item.unit || 'each',
+          notes: item.notes || '',
+        }
+      }
+      return next
+    })
+  }, [router.isReady, router.query.cart, cartItems])
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   function updateItem(category, item, quantity) {
@@ -75,6 +147,12 @@ export default function QuotePage() {
       .filter((group) => group.items.length > 0)
   }, [search, expandedCatalog])
 
+  const visibleCatalog = useMemo(() => {
+    if (search.trim()) return filteredCatalog
+    if (!activeCategory) return filteredCatalog.slice(0, 1)
+    return filteredCatalog.filter((group) => group.category === activeCategory)
+  }, [filteredCatalog, search, activeCategory])
+
   const selectedList = useMemo(() => Object.values(selectedItems).sort((a, b) => a.category === b.category ? a.product_name.localeCompare(b.product_name) : a.category.localeCompare(b.category)), [selectedItems])
   const totalUnits = selectedList.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
 
@@ -86,7 +164,24 @@ export default function QuotePage() {
     const res = await fetch('/api/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, selectedItems: selectedList }),
+      body: JSON.stringify({
+        name: form.name,
+        company: form.company,
+        email: form.email,
+        phone: form.phone,
+        details: [
+          form.details,
+          '',
+          'Procurement Details:',
+          form.po_number ? 'PO / Reference: ' + form.po_number : '',
+          'Tax status: ' + form.tax_status,
+          'Freight preference: ' + form.freight_preference,
+          form.delivery_location ? 'Delivery location: ' + form.delivery_location : '',
+          form.requested_delivery ? 'Requested delivery: ' + form.requested_delivery : '',
+          'Payment preference: ' + form.payment_preference,
+        ].filter(Boolean).join('\n'),
+        selectedItems: selectedList,
+      }),
     })
 
     const data = await res.json()
@@ -95,6 +190,7 @@ export default function QuotePage() {
     if (data.success) {
       setSubmitted(true)
       setQuoteId(data.quoteId)
+      if (router.query.cart === '1') clearCart()
     } else {
       setError(data.error || data.message || 'Error submitting quote')
     }
@@ -146,14 +242,27 @@ export default function QuotePage() {
                 <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <div className="border-b border-slate-200 px-6 py-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div><h2 className="text-2xl font-bold text-slate-900">Select materials</h2><p className="mt-1 text-sm text-slate-600">Search the catalog and enter quantities. Leave pricing to us.</p></div>
+                      <div><h2 className="text-2xl font-bold text-slate-900">Select materials</h2><p className="mt-1 text-sm text-slate-600">Choose a product family or search across the catalog, then enter only the quantities you need.</p></div>
                       <div className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">{selectedList.length} items selected • {totalUnits} total units</div>
                     </div>
-                    <div className="mt-5"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search fiber count, reel length, conduit, splice closures, tower mounts, grounding kits..." className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white" /></div>
+                    <div className="mt-5"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by part number, product type, size, or keyword..." className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white" /></div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {expandedCatalog.map((group) => (
+                        <button
+                          type="button"
+                          key={group.category}
+                          onClick={() => { setSearch(''); setActiveCategory(group.category) }}
+                          className={`whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold transition ${!search && activeCategory === group.category ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'}`}
+                        >
+                          {group.category}
+                        </button>
+                      ))}
+                    </div>
+                    {search && <div className="mt-3 text-xs font-semibold text-slate-500">Showing matches across all product families.</div>}
                   </div>
-                  <div className="max-h-[950px] overflow-y-auto px-6 py-6">
+                  <div className="max-h-[720px] overflow-y-auto px-6 py-6">
                     <div className="space-y-8">
-                      {filteredCatalog.map((group) => (
+                      {visibleCatalog.map((group) => (
                         <div key={group.category}>
                           <div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">{group.category}</h3><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Telecom construction catalog</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{group.items.length} items</span></div>
                           <div className="grid gap-3">
@@ -164,7 +273,7 @@ export default function QuotePage() {
                           </div>
                         </div>
                       ))}
-                      {filteredCatalog.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500">No catalog items matched your search.</div>}
+                      {visibleCatalog.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500"><div className="text-lg font-black text-slate-800">No catalog items matched</div><div className="mt-2 text-sm">Try a broader keyword or choose another product family.</div><button type="button" onClick={() => setSearch('')} className="mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white">Clear search</button></div>}
                     </div>
                   </div>
                 </div>
@@ -181,7 +290,31 @@ export default function QuotePage() {
                         <input name="company" placeholder="Company" required onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
                         <input name="email" type="email" placeholder="Email" required onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
                         <input name="phone" placeholder="Phone" onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
-                        <textarea name="details" placeholder="Project location, delivery requirements, requested brands, alternates, deadlines, freight considerations, or anything else we should know..." rows="7" onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <input name="po_number" value={form.po_number} onChange={handleChange} placeholder="PO / project / requisition number (optional)" className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <select name="tax_status" value={form.tax_status} onChange={handleChange} className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500">
+                            <option value="standard">Standard taxable purchase</option>
+                            <option value="tax-exempt">Tax-exempt — certificate available</option>
+                            <option value="resale">Resale — certificate available</option>
+                            <option value="government">Government / public entity</option>
+                          </select>
+                          <select name="payment_preference" value={form.payment_preference} onChange={handleChange} className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500">
+                            <option value="invoice-or-po">Invoice / purchase order</option>
+                            <option value="ach">ACH</option>
+                            <option value="card">Card / Stripe</option>
+                            <option value="terms">Request payment terms</option>
+                          </select>
+                        </div>
+                        <select name="freight_preference" value={form.freight_preference} onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500">
+                          <option value="quote-best-option">Quote best freight option</option>
+                          <option value="prepaid-add">Prepay and add freight</option>
+                          <option value="customer-account">Use buyer freight account</option>
+                          <option value="jobsite-delivery">Coordinate jobsite delivery</option>
+                          <option value="pickup">Pickup if available</option>
+                        </select>
+                        <input name="delivery_location" value={form.delivery_location} onChange={handleChange} placeholder="Delivery city/state or jobsite address" className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <input name="requested_delivery" value={form.requested_delivery} onChange={handleChange} placeholder="Requested delivery date / required-on-site date" className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
+                        <textarea name="details" value={form.details} placeholder="Requested brands, alternates, compliance requirements, delivery restrictions, deadlines, or anything else we should know..." rows="6" onChange={handleChange} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500" />
                       </div>
                       <button type="submit" disabled={loading} className="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">{loading ? 'Submitting quote request...' : 'Submit quote request'}</button>
                       <p className="mt-3 text-xs leading-5 text-slate-500">No public pricing is displayed. Final quotes may vary based on quantity, freight, lead time, approved alternates, and project requirements.</p>
