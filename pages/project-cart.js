@@ -26,13 +26,15 @@ export default function ProjectCartPage() {
           {!hydrated ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-10 text-slate-600">Loading project cart...</div>
           ) : items.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-12 text-center">
-              <div className="text-2xl font-black text-slate-950">Your project cart is empty</div>
-              <p className="mt-3 text-slate-600">Add catalog items or upload a BOM if you already have a full material list.</p>
-              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link href="/shop" className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white">Browse products</Link>
-                <Link href="/material-upload" className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-900">Upload BOM</Link>
+            <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:p-12">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-xl font-black text-blue-700 ring-1 ring-blue-100">PL</div>
+              <div className="mt-5 text-2xl font-black text-slate-950">Start a project material list</div>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">Add individual products when you are still building the package, or upload the full BOM when the material list is already defined. Quantities and line notes stay with the project until you request pricing.</p>
+              <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link href="/shop" className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700">Browse products</Link>
+                <Link href="/material-upload" className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-50">Upload BOM</Link>
               </div>
+              <div className="mt-6 text-xs font-semibold text-slate-400">Project pricing • Approved alternates • Freight coordination • Human review</div>
             </div>
           ) : (
             <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
