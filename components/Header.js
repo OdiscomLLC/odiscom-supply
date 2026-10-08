@@ -38,9 +38,9 @@ export default function Header() {
           </div>
         </Link>
 
-        <nav className="ml-3 hidden flex-1 items-center justify-center gap-7 text-sm font-semibold text-slate-700 lg:flex">
+        <nav className="ml-3 hidden flex-1 items-center justify-center gap-1 text-sm font-semibold text-slate-700 lg:flex">
           {primaryLinks.map(([href, label]) => (
-            <Link key={href} href={href} className="transition hover:text-blue-700">{label}</Link>
+            <Link key={href} href={href} className="rounded-lg px-3 py-2 transition hover:bg-slate-100 hover:text-blue-700">{label}</Link>
           ))}
         </nav>
 
