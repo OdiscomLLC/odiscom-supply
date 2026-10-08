@@ -12,14 +12,26 @@ export default function ManufacturersPage() {
   const [products, setProducts] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
+    let active = true
+    const timeout = setTimeout(() => {
+      if (active) {
+        setLoadError(true)
+        setLoading(false)
+      }
+    }, 5000)
     async function load() {
-      const { data } = await supabase.from('products').select('manufacturer,category,name,status').eq('status','active')
+      const { data, error } = await supabase.from('products').select('manufacturer,category,name,status').eq('status','active')
+      if (!active) return
+      clearTimeout(timeout)
+      setLoadError(Boolean(error))
       setProducts(data || [])
       setLoading(false)
     }
     load()
+    return () => { active = false; clearTimeout(timeout) }
   }, [])
 
   const manufacturers = useMemo(() => {
@@ -53,7 +65,8 @@ export default function ManufacturersPage() {
           <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Search manufacturer or product category..." className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:bg-white" />
           </div>
-          {loading ? <div className="rounded-3xl bg-white p-10 text-slate-600 shadow-sm">Loading manufacturers...</div> :
+          {loading ? <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{[1,2,3,4,5,6].map((n)=><div key={n} className="h-48 animate-pulse rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div className="h-3 w-24 rounded bg-slate-200"/><div className="mt-5 h-7 w-2/3 rounded bg-slate-200"/><div className="mt-5 h-4 w-1/2 rounded bg-slate-100"/></div>)}</div> :
+          loadError ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-center"><div className="text-xl font-black text-amber-950">Manufacturer directory is temporarily unavailable</div><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-amber-900">You can still browse the request catalog or send a manufacturer-specific sourcing request while the live directory reconnects.</p><div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/shop" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white">Browse products</Link><Link href="/quote" className="rounded-xl border border-amber-300 bg-white px-5 py-3 text-sm font-bold text-amber-950">Request brand sourcing</Link></div></div> :
           manufacturers.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700">MFG</div><div className="mt-4 text-xl font-black text-slate-950">No manufacturers matched that search</div><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">Try a broader manufacturer or product-family term. If the brand is not listed yet, Odiscom Supply can still source it through a project quote.</p><div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row"><button type="button" onClick={() => setSearch('')} className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white">Clear search</button><Link href="/quote" className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-900">Request brand sourcing</Link></div></div> :
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {manufacturers.map((m)=>(
