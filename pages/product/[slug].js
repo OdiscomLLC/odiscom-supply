@@ -72,6 +72,10 @@ export default function ProductPage() {
                   ['Manufacturer', product.manufacturer || '-'],
                   ['Unit', product.unit || 'each'],
                   ['Lead Time', product.lead_time || 'Confirmed at quote'],
+                  ['Manufacturer Part', product.manufacturer_part_number || product.sku || '-'],
+                  ['Country of Origin', product.country_of_origin || 'Confirmed at quote'],
+                  ['TAA', product.taa_compliant === true ? 'Compliant' : product.taa_compliant === false ? 'Not confirmed compliant' : 'Not confirmed'],
+                  ['BABA', product.baba_compliant === true ? 'Compliant' : product.baba_compliant === false ? 'Not confirmed compliant' : 'Not confirmed'],
                   ['Status', product.status || 'active'],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -81,6 +85,20 @@ export default function ProductPage() {
                 ))}
               </div>
             </div>
+
+            {product.specifications && Object.keys(product.specifications).length > 0 && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-2xl font-bold text-slate-950">Specifications</h2>
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {Object.entries(product.specifications).map(([key,value])=>(
+                    <div key={key} className="rounded-2xl bg-slate-50 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{key.replaceAll('_',' ')}</div>
+                      <div className="mt-2 font-semibold text-slate-900">{String(value)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-bold text-slate-950">Common sourcing notes</h2>
