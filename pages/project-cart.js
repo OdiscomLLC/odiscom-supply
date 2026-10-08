@@ -78,7 +78,7 @@ export default function ProjectCartPage() {
                     <div className="rounded-2xl bg-slate-50 p-4"><div className="text-xs text-slate-500">Total units</div><div className="mt-1 text-2xl font-black">{totalUnits}</div></div>
                   </div>
                   <Link href={quoteHref} className="mt-5 block rounded-xl bg-blue-600 px-5 py-3.5 text-center text-sm font-black text-white hover:bg-blue-700">Request project pricing</Link>
-                  <Link href="/shop" className="mt-3 block rounded-xl border border-slate-300 px-5 py-3.5 text-center text-sm font-bold text-slate-900">Continue sourcing</Link>
+                  <Link href="/compare" className="mt-3 block rounded-xl border border-blue-200 bg-blue-50 px-5 py-3.5 text-center text-sm font-bold text-blue-800">Compare project items</Link><Link href="/shop" className="mt-3 block rounded-xl border border-slate-300 px-5 py-3.5 text-center text-sm font-bold text-slate-900">Continue sourcing</Link>
                   <Link href="/material-upload" className="mt-3 block rounded-xl border border-slate-300 px-5 py-3.5 text-center text-sm font-bold text-slate-900">Upload BOM instead</Link>
 
                   {!confirmClear ? (
