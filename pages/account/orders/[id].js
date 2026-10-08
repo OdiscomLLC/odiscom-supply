@@ -30,6 +30,7 @@ export default function BuyerOrderPage() {
   const [loading,setLoading]=useState(true)
   const [message,setMessage]=useState('')
   const [submitting,setSubmitting]=useState(false)
+  const [stripeEnabled,setStripeEnabled]=useState(false)
   const [form,setForm]=useState({
     method:'purchase_order',
     po_number:'',
@@ -39,6 +40,7 @@ export default function BuyerOrderPage() {
   })
 
   useEffect(()=>{ if(id) load() },[id])
+  useEffect(()=>{ fetch('/api/payments/config').then(r=>r.json()).then(data=>setStripeEnabled(Boolean(data.stripeEnabled))).catch(()=>setStripeEnabled(false)) },[])
 
   async function load() {
     setLoading(true)
@@ -156,15 +158,15 @@ export default function BuyerOrderPage() {
             <form onSubmit={submitPayment} className="sticky top-32 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Checkout</div>
               <h2 className="mt-2 text-2xl font-black">Choose how this order is paid</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">PO, invoice, and terms requests are reviewed by Odiscom. Card and ACH use secure Stripe-hosted checkout when configured.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">PO, invoice, and terms requests are reviewed by Odiscom. Card and ACH use secure Stripe-hosted checkout when configured. Until Stripe is connected, PO, invoice, and terms remain available.</p>
               {message && <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">{message}</div>}
               <div className="mt-5 space-y-4">
                 <select value={form.method} onChange={(e)=>setForm({...form,method:e.target.value})} className="w-full rounded-xl border border-slate-300 p-3">
                   <option value="purchase_order">Purchase order</option>
                   <option value="invoice">Request invoice</option>
                   <option value="terms">Request payment terms</option>
-                  <option value="card">Credit / debit card</option>
-                  <option value="ach">ACH bank payment</option>
+                  {stripeEnabled && <option value="card">Credit / debit card</option>}
+                  {stripeEnabled && <option value="ach">ACH bank payment</option>}
                 </select>
                 <input value={form.po_number} onChange={(e)=>setForm({...form,po_number:e.target.value})} placeholder="PO number" className="w-full rounded-xl border border-slate-300 p-3"/>
                 <input value={form.customer_reference} onChange={(e)=>setForm({...form,customer_reference:e.target.value})} placeholder="Project / requisition reference" className="w-full rounded-xl border border-slate-300 p-3"/>
