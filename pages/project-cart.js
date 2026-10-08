@@ -24,7 +24,7 @@ export default function ProjectCartPage() {
 
         <section className="mx-auto max-w-7xl px-6 py-10">
           {!hydrated ? (
-            <div className="rounded-3xl border border-slate-200 bg-white p-10 text-slate-600">Loading project cart...</div>
+            <div className="grid gap-4 lg:grid-cols-[1fr_340px]"><div className="space-y-4">{[1,2,3].map((n)=><div key={n} className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div className="h-3 w-28 rounded bg-slate-200"/><div className="mt-4 h-6 w-2/3 rounded bg-slate-200"/><div className="mt-8 h-10 w-full rounded bg-slate-100"/></div>)}</div><div className="h-64 animate-pulse rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div className="h-3 w-28 rounded bg-slate-200"/><div className="mt-5 grid grid-cols-2 gap-3"><div className="h-20 rounded-2xl bg-slate-100"/><div className="h-20 rounded-2xl bg-slate-100"/></div></div></div>
           ) : items.length === 0 ? (
             <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:p-12">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-xl font-black text-blue-700 ring-1 ring-blue-100">PL</div>
