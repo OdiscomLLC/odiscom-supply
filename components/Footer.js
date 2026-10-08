@@ -26,7 +26,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 md:grid-cols-2 lg:grid-cols-[1.3fr_.8fr_.8fr_.8fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 md:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 text-sm font-black text-white">OS</div>
@@ -41,24 +41,19 @@ export default function Footer() {
           <a href="mailto:sales@odiscom.com" className="mt-5 inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10">sales@odiscom.com</a>
         </div>
 
-        <LinkList title="Source">
+        <LinkList title="Buyer resources">
           <Link href="/shop" className="hover:text-white">Browse products</Link>
           <Link href="/manufacturers" className="hover:text-white">Manufacturers</Link>
           <Link href="/material-upload" className="hover:text-white">Upload a BOM</Link>
-          <Link href="/project-cart" className="hover:text-white">Project cart</Link>
-        </LinkList>
-
-        <LinkList title="Buy">
           <Link href="/quote" className="hover:text-white">Request project pricing</Link>
           <Link href="/account" className="hover:text-white">Buyer account</Link>
-          <Link href="/compare" className="hover:text-white">Compare project items</Link>
-          <span className="text-slate-500">PO • Invoice • Terms</span>
         </LinkList>
 
-        <LinkList title="Partner">
+        <LinkList title="Project workflow">
+          <Link href="/project-cart" className="hover:text-white">Project cart</Link>
+          <Link href="/compare" className="hover:text-white">Compare project items</Link>
           <Link href="/supplier/login" className="hover:text-white">Supplier portal</Link>
-          <span>Government procurement</span>
-          <span>ISP & contractor sourcing</span>
+          <span>PO • Invoice • Terms</span>
           <span>Nationwide project support</span>
         </LinkList>
       </div>
