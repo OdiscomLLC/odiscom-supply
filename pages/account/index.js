@@ -128,7 +128,9 @@ export default function Account() {
                   <div className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Signed in as</div>
                   <div className="mt-1 font-bold text-slate-950">{user.email}</div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/account/company" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800">Company profile</Link>
+                  <Link href="/account/documents" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800">Documents</Link>
                   <Link href="/project-cart" className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-800">Project cart</Link>
                   <button type="button" onClick={signOut} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white">Sign out</button>
                 </div>
