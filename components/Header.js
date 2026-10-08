@@ -24,7 +24,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-semibold text-slate-700 lg:flex">
-          <Link href="/shop" className="hover:text-blue-700">Products</Link>
+          <Link href="/shop" className="hover:text-blue-700">Products</Link><Link href="/manufacturers" className="hover:text-blue-700">Manufacturers</Link>
           <Link href="/material-upload" className="hover:text-blue-700">Upload BOM</Link>
           <Link href="/quote" className="hover:text-blue-700">Request Quote</Link>
           <Link href="/account" className="hover:text-blue-700">Buyer Account</Link>
