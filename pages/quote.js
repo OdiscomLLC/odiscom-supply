@@ -246,7 +246,7 @@ export default function QuotePage() {
                       <div className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">{selectedList.length} items selected • {totalUnits} total units</div>
                     </div>
                     <div className="mt-5"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by part number, product type, size, or keyword..." className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white" /></div>
-                    <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    <div className="mt-4 flex flex-wrap gap-2">
                       {expandedCatalog.map((group) => (
                         <button
                           type="button"
