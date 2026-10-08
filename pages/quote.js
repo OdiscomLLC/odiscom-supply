@@ -44,6 +44,7 @@ export default function QuotePage() {
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', details: '', po_number: '', tax_status: 'standard', freight_preference: 'quote-best-option', delivery_location: '', requested_delivery: '', payment_preference: 'invoice-or-po' })
   const [selectedItems, setSelectedItems] = useState({})
   const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [quoteId, setQuoteId] = useState(null)
   const [error, setError] = useState('')
@@ -51,6 +52,10 @@ export default function QuotePage() {
   const { items: cartItems, clearCart } = useProjectCart()
 
   const expandedCatalog = useMemo(() => expandCatalogGroups(broadbandCatalog), [])
+
+  useEffect(() => {
+    if (!activeCategory && expandedCatalog.length) setActiveCategory(expandedCatalog[0].category)
+  }, [activeCategory, expandedCatalog])
 
   useEffect(() => {
     if (!router.isReady || typeof router.query.item !== 'string') return
@@ -142,6 +147,12 @@ export default function QuotePage() {
       .filter((group) => group.items.length > 0)
   }, [search, expandedCatalog])
 
+  const visibleCatalog = useMemo(() => {
+    if (search.trim()) return filteredCatalog
+    if (!activeCategory) return filteredCatalog.slice(0, 1)
+    return filteredCatalog.filter((group) => group.category === activeCategory)
+  }, [filteredCatalog, search, activeCategory])
+
   const selectedList = useMemo(() => Object.values(selectedItems).sort((a, b) => a.category === b.category ? a.product_name.localeCompare(b.product_name) : a.category.localeCompare(b.category)), [selectedItems])
   const totalUnits = selectedList.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
 
@@ -231,14 +242,27 @@ export default function QuotePage() {
                 <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <div className="border-b border-slate-200 px-6 py-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div><h2 className="text-2xl font-bold text-slate-900">Select materials</h2><p className="mt-1 text-sm text-slate-600">Search the catalog and enter quantities. Leave pricing to us.</p></div>
+                      <div><h2 className="text-2xl font-bold text-slate-900">Select materials</h2><p className="mt-1 text-sm text-slate-600">Choose a product family or search across the catalog, then enter only the quantities you need.</p></div>
                       <div className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">{selectedList.length} items selected • {totalUnits} total units</div>
                     </div>
-                    <div className="mt-5"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search fiber count, reel length, conduit, splice closures, tower mounts, grounding kits..." className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white" /></div>
+                    <div className="mt-5"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by part number, product type, size, or keyword..." className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white" /></div>
+                    <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                      {expandedCatalog.map((group) => (
+                        <button
+                          type="button"
+                          key={group.category}
+                          onClick={() => { setSearch(''); setActiveCategory(group.category) }}
+                          className={`whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold transition ${!search && activeCategory === group.category ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700'}`}
+                        >
+                          {group.category}
+                        </button>
+                      ))}
+                    </div>
+                    {search && <div className="mt-3 text-xs font-semibold text-slate-500">Showing matches across all product families.</div>}
                   </div>
-                  <div className="max-h-[950px] overflow-y-auto px-6 py-6">
+                  <div className="max-h-[720px] overflow-y-auto px-6 py-6">
                     <div className="space-y-8">
-                      {filteredCatalog.map((group) => (
+                      {visibleCatalog.map((group) => (
                         <div key={group.category}>
                           <div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-bold text-slate-900">{group.category}</h3><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Telecom construction catalog</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{group.items.length} items</span></div>
                           <div className="grid gap-3">
@@ -249,7 +273,7 @@ export default function QuotePage() {
                           </div>
                         </div>
                       ))}
-                      {filteredCatalog.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500">No catalog items matched your search.</div>}
+                      {visibleCatalog.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500"><div className="text-lg font-black text-slate-800">No catalog items matched</div><div className="mt-2 text-sm">Try a broader keyword or choose another product family.</div><button type="button" onClick={() => setSearch('')} className="mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white">Clear search</button></div>}
                     </div>
                   </div>
                 </div>
