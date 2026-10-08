@@ -50,7 +50,7 @@ export default function ComparePage(){
         </section>
         <section className="mx-auto max-w-7xl px-6 py-10">
           {!hydrated || loading ? <div className="rounded-3xl bg-white p-10 text-slate-600 shadow-sm">Loading comparison...</div> :
-          items.length===0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center"><div className="text-xl font-black">No project items to compare</div><Link href="/shop" className="mt-5 inline-block rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">Browse catalog</Link></div> :
+          items.length===0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700">CMP</div><div className="mt-4 text-xl font-black text-slate-950">Add project items before comparing</div><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">Comparison uses the products already in your project cart so quantities, manufacturer preferences, compliance fields, and specifications stay tied to the same sourcing package.</p><div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/shop" className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">Browse catalog</Link><Link href="/project-cart" className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-900">Open project cart</Link></div></div> :
           <>
             <div className="mb-6 flex flex-wrap gap-3">
               <Link href="/project-cart" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900">Back to project cart</Link>
