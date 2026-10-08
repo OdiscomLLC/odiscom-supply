@@ -3,14 +3,14 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 
 const categories = [
-  ['Fiber Cable', 'OSP, indoor/outdoor, armored, drop, ribbon, and project reel lengths', 'OSP Fiber Cable'],
-  ['Conduit & Pathway', 'HDPE conduit, innerduct, microduct, fittings, and accessories', 'Conduit & Innerduct'],
-  ['Splicing & Closures', 'Closures, trays, splitters, terminals, patching, and protection', 'Splice Closures'],
-  ['Handholes & Vaults', 'Underground enclosures, lids, vaults, and installation accessories', 'Handholes & Vaults'],
-  ['Wireless & Tower', 'Mounts, steel, jumpers, hangers, weatherproofing, and site hardware', 'Tower Steel & Mounts'],
-  ['Grounding & Power', 'Grounding, surge protection, cabinets, power, and electrical site materials', 'Grounding & Power'],
-  ['Tools & Test', 'Fusion splicers, OTDRs, meters, prep tools, and field equipment', 'Fusion Splicing Tools'],
-  ['Reel Handling', 'Fiber reel trailers, reel stands, pulling accessories, and deployment equipment', 'Fiber Reel Trailers'],
+  ['Fiber Cable', 'OSP, indoor/outdoor, armored, drop, ribbon, and project reel lengths', 'OSP Fiber Cable', 'FO'],
+  ['Conduit & Pathway', 'HDPE conduit, innerduct, microduct, fittings, and accessories', 'Conduit & Innerduct', 'HD'],
+  ['Splicing & Closures', 'Closures, trays, splitters, terminals, patching, and protection', 'Splice Closures', 'SP'],
+  ['Handholes & Vaults', 'Underground enclosures, lids, vaults, and installation accessories', 'Handholes & Vaults', 'HH'],
+  ['Wireless & Tower', 'Mounts, steel, jumpers, hangers, weatherproofing, and site hardware', 'Tower Steel & Mounts', 'RF'],
+  ['Grounding & Power', 'Grounding, surge protection, cabinets, power, and electrical site materials', 'Grounding & Power', 'GP'],
+  ['Tools & Test', 'Fusion splicers, OTDRs, meters, prep tools, and field equipment', 'Fusion Splicing Tools', 'TT'],
+  ['Reel Handling', 'Fiber reel trailers, reel stands, pulling accessories, and deployment equipment', 'Fiber Reel Trailers', 'RH'],
 ]
 
 const buyingModes = [
@@ -39,20 +39,21 @@ export default function Home() {
           </div>
           <div className="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:py-28">
             <div>
-              <div className="mb-5 inline-flex rounded-full border border-blue-300/20 bg-blue-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
-                Telecom procurement built for projects, not shopping carts
+              <div className="mb-5 text-sm font-black uppercase tracking-[0.22em] text-blue-200">
+                Telecom procurement for real project requirements
               </div>
               <h1 className="max-w-5xl text-4xl font-black leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
                 Source the material package. Not just the part number.
               </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-                Odiscom Supply helps contractors, ISPs, integrators, and public-sector buyers source fiber, wireless, tower, OSP, power, grounding, tools, and construction hardware by project requirement.
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-200 md:text-xl">
+                Source fiber, wireless, tower, OSP, power, grounding, tools, and construction hardware around the actual job—quantity, approved manufacturers, alternates, freight, lead time, and delivery requirements included.
               </p>
 
-              <form action="/shop" method="get" className="mt-8 flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur sm:flex-row">
+              <div className="mt-8 max-w-3xl text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Search the catalog or start with a complete material list</div>
+              <form action="/shop" method="get" className="mt-3 flex max-w-3xl flex-col gap-3 rounded-2xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur sm:flex-row">
                 <input
                   name="search"
-                  placeholder="Search manufacturer, part number, fiber count, conduit size, handhole..."
+                  placeholder="Search by part number, manufacturer, or category..."
                   className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white px-4 py-3.5 text-sm text-slate-950 outline-none ring-0 placeholder:text-slate-400"
                 />
                 <button className="rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white hover:bg-blue-500">Search products</button>
@@ -121,9 +122,9 @@ export default function Home() {
             <Link href="/shop" className="text-sm font-bold text-blue-700 hover:text-blue-800">Browse full catalog →</Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {categories.map(([title, body, search]) => (
-              <Link key={title} href={`/shop?category=${encodeURIComponent(search)}`} className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg">
-                <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">↗</div>
+            {categories.map(([title, body, search, icon]) => (
+              <Link key={title} href={`/shop?category=${encodeURIComponent(search)}`} className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl">
+                <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-slate-100 text-sm font-black tracking-tight text-blue-700 ring-1 ring-blue-100 transition group-hover:from-blue-600 group-hover:to-blue-700 group-hover:text-white">{icon}</div>
                 <h3 className="text-lg font-black text-slate-950">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
                 <div className="mt-5 text-sm font-bold text-blue-700">View category</div>
@@ -140,8 +141,8 @@ export default function Home() {
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {buyingModes.map(([title, body], index) => (
-                <div key={title} className="rounded-3xl bg-slate-50 p-6">
-                  <div className="text-xs font-black text-blue-700">0{index + 1}</div>
+                <div key={title} className="rounded-3xl border border-slate-200 bg-slate-50 p-6 transition hover:border-blue-200 hover:bg-white hover:shadow-sm">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-xs font-black text-white">0{index + 1}</div>
                   <h3 className="mt-5 text-lg font-black text-slate-950">{title}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
                 </div>
