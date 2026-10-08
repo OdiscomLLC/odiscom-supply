@@ -166,7 +166,8 @@ export default function Account() {
                     {loaded && orders.length === 0 && <div className="p-8 text-slate-500">No orders found for this account.</div>}
                     {orders.map((order) => (
                       <div key={order.id} className="p-6">
-                        <div className="flex items-start justify-between gap-4"><div><div className="font-mono text-sm font-black text-green-700">{order.order_number}</div><div className="mt-1 font-semibold text-slate-950">{order.company}</div><div className="mt-2 text-xs text-slate-500">{order.created_at ? new Date(order.created_at).toLocaleString() : ''}</div></div><div className="text-right"><div className="font-bold text-slate-950">{money(order.total)}</div><span className="mt-2 inline-block rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">{order.status}</span></div></div>
+                        <div className="flex items-start justify-between gap-4"><div><div className="font-mono text-sm font-black text-green-700">{order.order_number}</div><div className="mt-1 font-semibold text-slate-950">{order.company}</div><div className="mt-2 text-xs text-slate-500">{order.created_at ? new Date(order.created_at).toLocaleString() : ''}</div></div><div className="text-right"><div className="font-bold text-slate-950">{money(order.total)}</div><span className="mt-2 inline-block rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">{order.fulfillment_status || order.status}</span></div></div>
+                        <div className="mt-4 flex items-center justify-between gap-3"><span className="text-xs font-semibold text-slate-500">Payment: {order.payment_status || 'unpaid'}</span><Link href={`/account/orders/${order.id}`} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white">View order</Link></div>
                       </div>
                     ))}
                   </div>
