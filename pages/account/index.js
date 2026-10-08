@@ -117,7 +117,7 @@ export default function Account() {
               {message && <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">{message}</div>}
               <form onSubmit={requestAccess} className="mt-6 space-y-3">
                 <label className="block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="buyer-email">Business email</label>
-                <input id="buyer-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="buyer@company.com" className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50" />
+                <input id="buyer-email" type="email" required disabled={loading} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="buyer@company.com" className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:opacity-60" />
                 <button disabled={loading} className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:opacity-60">{loading ? 'Sending secure link...' : 'Email secure sign-in link'}</button>
               </form>
               <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-600"><span className="font-black text-slate-800">Passwordless access.</span> Use the email tied to your quote or order. We send a one-time secure sign-in link, and no account data is exposed from an email lookup alone.</div>
