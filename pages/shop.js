@@ -98,7 +98,7 @@ export default function Shop() {
   const router = useRouter()
   const [databaseProducts, setDatabaseProducts] = useState([])
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [viewMode, setViewMode] = useState('all')
@@ -111,6 +111,7 @@ export default function Shop() {
 
   useEffect(() => {
     async function loadProducts() {
+      setLoading(true)
       const { data, error: loadError } = await supabase
         .from('products')
         .select('*')
@@ -212,9 +213,8 @@ export default function Shop() {
             </div>
           </div>
 
-          {loading ? (
-            <div className="rounded-3xl border border-slate-200 bg-white p-10 text-slate-600 shadow-sm">Loading catalog...</div>
-          ) : filteredProducts.length === 0 ? (
+          {loading && <div className="mb-5 flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-800"><span className="h-2 w-2 animate-pulse rounded-full bg-blue-600" /> Syncing saved catalog products. Request-catalog items remain available now.</div>}
+          {filteredProducts.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
               <div className="text-xl font-black text-slate-950">No matching catalog item</div>
               <p className="mt-2 text-sm text-slate-600">Clear the filters or send the requirement directly and we can source it.</p>
