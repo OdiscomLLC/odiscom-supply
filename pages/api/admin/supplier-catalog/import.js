@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   const supplierId = clean(req.body?.supplierId, 80)
   const sourceId = clean(req.body?.sourceId, 80) || null
-  const mapping = req.body?.mapping && typeof req.body.mapping === 'object' ? req.body.mapping : {}
+  let mapping = req.body?.mapping && typeof req.body.mapping === 'object' ? req.body.mapping : {}
   const dryRun = Boolean(req.body?.dryRun)
   const rowsInput = Array.isArray(req.body?.rows)
     ? req.body.rows
@@ -27,10 +27,15 @@ export default async function handler(req, res) {
   const { data: supplier, error: supplierError } = await admin.from('suppliers').select('id,name').eq('id', supplierId).maybeSingle()
   if (supplierError || !supplier) return res.status(404).json({ success: false, message: 'Supplier not found' })
 
+  let source = null
   if (sourceId) {
-    const { data: source, error: sourceError } = await admin.from('supplier_catalog_sources').select('id,supplier_id').eq('id', sourceId).maybeSingle()
-    if (sourceError || !source || source.supplier_id !== supplierId) {
+    const { data: sourceData, error: sourceError } = await admin.from('supplier_catalog_sources').select('id,supplier_id,field_mapping').eq('id', sourceId).maybeSingle()
+    if (sourceError || !sourceData || sourceData.supplier_id !== supplierId) {
       return res.status(400).json({ success: false, message: 'Catalog source does not belong to this supplier.' })
+    }
+    source = sourceData
+    if ((!req.body?.mapping || Object.keys(mapping).length === 0) && source.field_mapping && typeof source.field_mapping === 'object') {
+      mapping = source.field_mapping
     }
   }
 
@@ -196,6 +201,9 @@ export default async function handler(req, res) {
             reviewCount += 1
           } else {
             updatedOfferCount += 1
+            if (product.sourcing_status !== 'offer_available') {
+              await admin.from('products').update({ sourcing_status: 'offer_available', updated_at: new Date().toISOString() }).eq('id', product.id)
+            }
           }
         }
       }
@@ -232,11 +240,14 @@ export default async function handler(req, res) {
     }
 
     if (stagingRows.length) {
-      const { error: stagingError } = await admin.from('supplier_import_rows').insert(stagingRows)
-      if (stagingError) throw stagingError
+      for (let index = 0; index < stagingRows.length; index += 500) {
+        const { error: stagingError } = await admin.from('supplier_import_rows').insert(stagingRows.slice(index, index + 500))
+        if (stagingError) throw stagingError
+      }
     }
 
     const finalStatus = reviewCount || rejectedCount ? 'completed_with_review' : 'completed'
+    const completedAt = new Date().toISOString()
     await admin.from('supplier_import_jobs').update({
       status: finalStatus,
       matched_count: matchedCount,
@@ -244,8 +255,17 @@ export default async function handler(req, res) {
       updated_offer_count: updatedOfferCount,
       review_count: reviewCount,
       rejected_count: rejectedCount,
-      completed_at: new Date().toISOString(),
+      completed_at: completedAt,
     }).eq('id', job.id)
+
+    if (sourceId) {
+      await admin.from('supplier_catalog_sources').update({
+        last_sync_at: completedAt,
+        last_success_at: completedAt,
+        last_error: null,
+        updated_at: completedAt,
+      }).eq('id', sourceId)
+    }
 
     return res.status(200).json({
       success: true,
@@ -254,12 +274,23 @@ export default async function handler(req, res) {
       summary: { rows: normalizedRows.length, matchedCount, createdProductCount, updatedOfferCount, reviewCount, rejectedCount },
     })
   } catch (error) {
+    const failedAt = new Date().toISOString()
+    const errorMessage = String(error?.message || error)
     await admin.from('supplier_import_jobs').update({
       status: 'failed',
-      error_summary: String(error?.message || error),
-      completed_at: new Date().toISOString(),
+      error_summary: errorMessage,
+      completed_at: failedAt,
     }).eq('id', job.id)
 
-    return res.status(500).json({ success: false, jobId: job.id, message: String(error?.message || error) })
+    if (sourceId) {
+      await admin.from('supplier_catalog_sources').update({
+        last_sync_at: failedAt,
+        last_error_at: failedAt,
+        last_error: errorMessage.slice(0, 2000),
+        updated_at: failedAt,
+      }).eq('id', sourceId)
+    }
+
+    return res.status(500).json({ success: false, jobId: job.id, message: errorMessage })
   }
 }
