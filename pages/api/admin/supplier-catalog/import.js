@@ -193,6 +193,8 @@ export default async function handler(req, res) {
             source_updated_at: new Date().toISOString(),
             last_seen_at: new Date().toISOString(),
             active: true,
+            review_status: 'approved',
+            reviewed_at: new Date().toISOString(),
           }], { onConflict: 'supplier_id,product_id,offer_key' })
 
           if (offerError) {
