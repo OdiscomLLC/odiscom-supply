@@ -48,7 +48,7 @@ test('row validation rejects missing identity and negative commercial values', (
   const row=mapSupplierRow({name:'Unknown item',cost:'-1',stock:'-2'})
   const errors=validateSupplierRow(row)
   assert.ok(errors.includes('manufacturer is required'))
-  assert.ok(errors.includes('manufacturer part number or supplier SKU is required'))
+  assert.ok(errors.includes('manufacturer part number is required for automatic catalog matching'))
   assert.ok(errors.includes('unit cost cannot be negative'))
   assert.ok(errors.includes('available quantity cannot be negative'))
 })
