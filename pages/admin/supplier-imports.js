@@ -22,8 +22,40 @@ export default function SupplierCatalogImports() {
   const [loading,setLoading]=useState(true)
   const [submitting,setSubmitting]=useState(false)
   const [message,setMessage]=useState('')
+  const [connectors,setConnectors]=useState([])
+  const [connectorForm,setConnectorForm]=useState({connector:'digikey',manufacturer:'',mpn:''})
+  const [connectorBusy,setConnectorBusy]=useState(false)
 
-  useEffect(()=>{ load() },[])
+  useEffect(()=>{ load(); loadConnectors() },[])
+
+  async function loadConnectors() {
+    const {data:sessionData}=await supabase.auth.getSession()
+    const token=sessionData.session?.access_token
+    if(!token) return
+    const response=await fetch('/api/admin/supplier-connectors/status',{headers:{Authorization:'Bearer '+token}})
+    const data=await response.json()
+    if(response.ok) setConnectors(data.connectors || [])
+  }
+
+  async function refreshConnector(e) {
+    e.preventDefault()
+    setConnectorBusy(true)
+    setMessage('')
+    const {data:sessionData}=await supabase.auth.getSession()
+    const token=sessionData.session?.access_token
+    if(!token){ setConnectorBusy(false); return setMessage('Admin session is required.') }
+    const response=await fetch('/api/admin/supplier-connectors/sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+      body:JSON.stringify(connectorForm),
+    })
+    const data=await response.json()
+    setConnectorBusy(false)
+    if(!response.ok) return setMessage(data.message || 'Supplier refresh failed.')
+    setMessage(`${data.offer?.supplier || connectorForm.connector} refreshed ${data.product?.manufacturer || connectorForm.manufacturer} ${data.product?.mpn || connectorForm.mpn}. ${data.createdDraft ? 'A draft product was created for review.' : 'Offer updated.'}`)
+    load()
+    loadConnectors()
+  }
 
   async function load() {
     const [supplierRes,sourceRes,jobRes]=await Promise.all([
@@ -87,6 +119,51 @@ export default function SupplierCatalogImports() {
             <h2 className="mt-3 text-3xl font-black">Normalize supplier feeds into one Odiscom product catalog.</h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">Supplier rows become internal offers behind canonical manufacturer products. New matches are created as drafts and do not publish automatically.</p>
           </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1fr_420px]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Live supplier connectors</div>
+                <h3 className="mt-2 text-xl font-black text-slate-950">DigiKey and Mouser API status</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Credentials remain server-only. A successful refresh writes an approved supplier offer behind the canonical product; it never auto-publishes a new product.</p>
+              </div>
+              <button type="button" onClick={loadConnectors} className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-800">Refresh status</button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {connectors.length===0 && <div className="text-sm text-slate-500">Connector status unavailable until the admin session loads.</div>}
+              {connectors.map((connector)=>(
+                <div key={connector.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-black text-slate-950">{connector.label}</div>
+                    <Badge tone={connector.configured?'green':'amber'}>{connector.configured?'Configured':'Needs credentials'}</Badge>
+                  </div>
+                  <div className="mt-3 text-xs leading-5 text-slate-500">{connector.credentials?.join(' • ')}</div>
+                  <div className="mt-3 flex items-center gap-2 text-xs">
+                    <Badge tone={connector.source?.status==='active'?'green':'slate'}>{connector.source?.status || 'source missing'}</Badge>
+                    {connector.source?.last_success_at && <span className="text-slate-500">Last success {new Date(connector.source.last_success_at).toLocaleString()}</span>}
+                  </div>
+                  {connector.source?.last_error && <div className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">{connector.source.last_error}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <form onSubmit={refreshConnector} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Refresh one part</div>
+            <h3 className="mt-2 text-xl font-black text-slate-950">Test live pricing & availability</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Use an exact manufacturer and manufacturer part number after credentials are configured.</p>
+            <div className="mt-5 space-y-3">
+              <select value={connectorForm.connector} onChange={(e)=>setConnectorForm({...connectorForm,connector:e.target.value})} className="w-full rounded-xl border border-slate-300 p-3 text-sm">
+                <option value="digikey">DigiKey</option>
+                <option value="mouser">Mouser</option>
+              </select>
+              <input value={connectorForm.manufacturer} onChange={(e)=>setConnectorForm({...connectorForm,manufacturer:e.target.value})} placeholder="Manufacturer (e.g. HMS Networks)" className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+              <input value={connectorForm.mpn} onChange={(e)=>setConnectorForm({...connectorForm,mpn:e.target.value})} placeholder="Manufacturer part number" className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+              <button disabled={connectorBusy || !connectorForm.manufacturer || !connectorForm.mpn} className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:opacity-50">{connectorBusy?'Refreshing...':'Refresh supplier offer'}</button>
+            </div>
+          </form>
         </section>
 
         <div className="grid gap-4 md:grid-cols-4">
