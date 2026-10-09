@@ -3,7 +3,7 @@ import AdminShell from '../../components/AdminShell'
 import { supabase } from '../../lib/supabase'
 
 const sampleCsv = `manufacturer,manufacturer_part_number,supplier_sku,product_name,description,category,unit_cost,currency,available_quantity,availability_status,lead_time_text,unit
-N-Tron,1005TX,1005TX,N-Tron 1005TX Industrial Ethernet Switch,Industrial Ethernet switch,Industrial Networking,0,USD,,unknown,Confirm at quote,each`
+N-Tron,1005TX,1005TX,N-Tron 1005TX Industrial Ethernet Switch,Industrial Ethernet switch,Industrial Networking,,USD,,unknown,Confirm at quote,each`
 
 function Badge({ children, tone='blue' }) {
   const tones={blue:'bg-blue-50 text-blue-700',green:'bg-green-50 text-green-700',amber:'bg-amber-50 text-amber-700',red:'bg-red-50 text-red-700',slate:'bg-slate-100 text-slate-700'}
