@@ -267,3 +267,30 @@ where not exists(
   select 1 from public.supplier_catalog_sources c
   where c.supplier_id=s.id and lower(c.name)=lower('Manual / quoted pricing')
 );
+
+
+insert into public.supplier_catalog_sources
+  (supplier_id,name,source_type,status,credential_reference,endpoint_url,field_mapping,sync_settings)
+select s.id,v.source_name,'api','paused',v.credential_reference,v.endpoint_url,'{}'::jsonb,v.sync_settings::jsonb
+from (values
+  ('DigiKey','DigiKey Product Information V4 API','OAuth client credentials required','https://api.digikey.com/products/v4/','{"capabilities":["product_search","product_details","pricing","availability","media"],"activation":"requires DigiKey developer application"}'),
+  ('Mouser Electronics','Mouser Search API','Mouser API key required',null,'{"capabilities":["product_search","availability","pricing","price_breaks","lead_time","compliance","datasheets"],"activation":"requires My Mouser Search API access"}'),
+  ('Ingram Micro','Ingram Micro Reseller API','Ingram Micro developer credentials and active account required','https://api.ingrammicro.com:443/','{"capabilities":["catalog","price_availability","warehouse_stock","orders","invoices","freight"],"activation":"requires Ingram Micro reseller/developer approval"}'),
+  ('TD SYNNEX','TD SYNNEX Developer API','TD SYNNEX PartnerFirst / developer credentials required',null,'{"capabilities":["catalog","price_availability","inventory","quotes","orders","invoices","freight"],"activation":"requires TD SYNNEX customer and developer portal credentials"}')
+) as v(supplier_name,source_name,credential_reference,endpoint_url,sync_settings)
+join public.suppliers s on lower(s.name)=lower(v.supplier_name)
+where not exists (
+  select 1 from public.supplier_catalog_sources c
+  where c.supplier_id=s.id and lower(c.name)=lower(v.source_name)
+);
+
+insert into public.supplier_catalog_sources
+  (supplier_id,name,source_type,status,credential_reference,field_mapping,sync_settings)
+select s.id,'CSV / quote catalog feed','csv','paused','Supplier CSV or structured quote export required','{}'::jsonb,
+       '{"capabilities":["catalog","cost","availability","lead_time"],"activation":"upload mapped supplier CSV or quote export"}'::jsonb
+from public.suppliers s
+where lower(s.name)=lower('Adams Cable Equipment, Inc.')
+  and not exists (
+    select 1 from public.supplier_catalog_sources c
+    where c.supplier_id=s.id and lower(c.name)=lower('CSV / quote catalog feed')
+  );
