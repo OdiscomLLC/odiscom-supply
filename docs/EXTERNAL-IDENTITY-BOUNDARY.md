@@ -1,10 +1,10 @@
 # Odiscom Supply External Identity Boundary
 
 **Company:** Odiscom Supply LLC  
-**Target identity service:** Microsoft Entra External ID  
+**Target identity service:** Microsoft Entra External ID in a dedicated external tenant  
 **Audience:** external B2B customers and external suppliers
 
-The customer portal and supplier portal must use external identity that is independent of the Odiscom Supply workforce tenant's internal authorization model.
+The customer portal and supplier portal must use Microsoft Entra External ID in a dedicated **external tenant**, separate from the Odiscom Supply workforce tenant. The workforce tenant remains for Odiscom Supply personnel, SharePoint, Azure administration, and internal applications.
 
 ## Customer identity model
 
