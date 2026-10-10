@@ -1,12 +1,12 @@
 # Odiscom Supply — Microsoft Tenant Decision
 
 **Date:** 2026-10-10  
-**Status:** Recommended target; provisioning requires explicit administrative execution  
+**Status:** Workforce tenant confirmed; custom-domain verification and live provisioning remain execution gates  
 **Company:** Odiscom Supply LLC
 
-## Recommendation
+## Confirmed workforce tenant
 
-Provision Odiscom Supply LLC with its **own Microsoft 365 / Microsoft Entra tenant** using the `odiscomsupply.com` domain.
+Odiscom Supply LLC already has its **own Microsoft Entra workforce tenant** with initial domain `odiscomsupply.onmicrosoft.com`. The target custom domain is `odiscomsupply.com`.
 
 This is the preferred long-term design because Odiscom Supply LLC is a separate company from Odiscom LLC and Odiscom LLC is a customer of Odiscom Supply.
 
