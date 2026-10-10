@@ -1,0 +1,14 @@
+using './main.bicep'
+
+param environment = 'test'
+
+// Set these values only after the Odiscom Supply tenant and SQL admin group exist.
+// Do not commit a real bootstrap password.
+//
+// param sqlEntraAdminLogin = 'OdiscomSupply-SQL-Admins'
+// param sqlEntraAdminObjectId = '00000000-0000-0000-0000-000000000000'
+// param sqlBootstrapPassword = '<supply-via-secure-pipeline-secret>'
+//
+// Optional:
+// param location = 'southcentralus'
+// param webPlanSku = 'B1'
