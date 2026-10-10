@@ -14,6 +14,7 @@ UNION ALL SELECT 'commerce.SalesOrder', COUNT_BIG(*) FROM commerce.SalesOrder
 UNION ALL SELECT 'commerce.SalesOrderItem', COUNT_BIG(*) FROM commerce.SalesOrderItem
 UNION ALL SELECT 'commerce.OrderEvent', COUNT_BIG(*) FROM commerce.OrderEvent
 UNION ALL SELECT 'commerce.CustomerDocument', COUNT_BIG(*) FROM commerce.CustomerDocument
+UNION ALL SELECT 'commerce.MaterialUpload', COUNT_BIG(*) FROM commerce.MaterialUpload
 UNION ALL SELECT 'ops.HardwareOpportunity', COUNT_BIG(*) FROM ops.HardwareOpportunity
 UNION ALL SELECT 'ops.HardwareOpportunityItem', COUNT_BIG(*) FROM ops.HardwareOpportunityItem
 UNION ALL SELECT 'ops.OpportunitySupplierQuote', COUNT_BIG(*) FROM ops.OpportunitySupplierQuote
