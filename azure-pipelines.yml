@@ -1,0 +1,90 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  nodeVersion: '22.x'
+  bicepFile: 'infra/main.bicep'
+  functionsDirectory: 'azure/functions'
+  # Configure these in Azure DevOps variable groups/environment settings.
+  # azureServiceConnection: '<service-connection-name>'
+  # resourceGroupName: '<odiscom-supply-resource-group>'
+  # environmentName: 'test'
+  # sqlEntraAdminLogin: '<entra-group-display-name>'
+  # sqlEntraAdminObjectId: '<entra-group-object-id>'
+  # sqlBootstrapPassword: secret variable only
+
+stages:
+  - stage: Validate
+    displayName: Validate Microsoft foundation
+    jobs:
+      - job: ValidateInfrastructure
+        displayName: Validate Bicep
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            displayName: Build Bicep
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az bicep build --file "$(bicepFile)" --stdout > /tmp/odiscom-supply-foundation.json
+                test -s /tmp/odiscom-supply-foundation.json
+
+      - job: ValidateFunctions
+        displayName: Validate Azure Functions
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UseNode@1
+            inputs:
+              version: '$(nodeVersion)'
+          - script: |
+              set -euo pipefail
+              cd "$(functionsDirectory)"
+              npm install --ignore-scripts
+              npm test
+            displayName: Install and test Functions package
+
+  - stage: DeployTest
+    displayName: Deploy test foundation
+    dependsOn: Validate
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployFoundation
+        displayName: Deploy Odiscom Supply test infrastructure
+        environment: 'odiscom-supply-test'
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: AzureCLI@2
+                  displayName: What-if
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      az deployment group what-if                         --resource-group "$(resourceGroupName)"                         --template-file "$(bicepFile)"                         --parameters                           environment=test                           sqlEntraAdminLogin="$(sqlEntraAdminLogin)"                           sqlEntraAdminObjectId="$(sqlEntraAdminObjectId)"                           sqlBootstrapPassword="$(sqlBootstrapPassword)"
+                - task: AzureCLI@2
+                  displayName: Deploy
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      az deployment group create                         --resource-group "$(resourceGroupName)"                         --template-file "$(bicepFile)"                         --parameters                           environment=test                           sqlEntraAdminLogin="$(sqlEntraAdminLogin)"                           sqlEntraAdminObjectId="$(sqlEntraAdminObjectId)"                           sqlBootstrapPassword="$(sqlBootstrapPassword)"                         --name "odiscom-supply-$(Build.BuildId)"
