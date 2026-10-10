@@ -310,7 +310,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
       runtime: {
         name: 'node'
-        version: '20'
+        version: '22'
       }
     }
   }
@@ -358,7 +358,7 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
     httpsOnly: true
     clientAffinityEnabled: false
     siteConfig: {
-      linuxFxVersion: 'NODE|20-lts'
+      linuxFxVersion: 'NODE|22-lts'
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
       alwaysOn: webPlanSku != 'F1'
