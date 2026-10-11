@@ -19,6 +19,9 @@ param sqlEntraAdminObjectId string
 @description('Tenant ID that owns the Odiscom Supply Microsoft resources.')
 param tenantId string = tenant().tenantId
 
+@description('Microsoft Entra client ID for the Odiscom Supply Internal API app registration.')
+param internalApiClientId string = ''
+
 @description('Bootstrap SQL login required by Azure SQL server creation. SQL authentication is disabled after the Entra-only control is applied.')
 param sqlBootstrapLogin string = 'odiscomsupplybootstrap'
 
@@ -328,6 +331,8 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       SQL_SERVER_FQDN: sqlServer.properties.fullyQualifiedDomainName
       SQL_DATABASE_NAME: sqlDatabase.name
       ODISCOM_SUPPLY_ENVIRONMENT: environment
+      ODISCOM_SUPPLY_TENANT_ID: tenantId
+      INTERNAL_API_CLIENT_ID: internalApiClientId
     }
   }
 }
