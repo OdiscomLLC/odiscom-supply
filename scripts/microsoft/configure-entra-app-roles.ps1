@@ -59,7 +59,26 @@ foreach ($role in $roles) {
   }
 }
 
-$patchBody = @{ appRoles = $appRoles } | ConvertTo-Json -Depth 10 -Compress
+$accessAsUserScopeId = '9f20401d-2d0f-4e24-8de7-2bb5f0b6a7c3'
+$accessAsUserScope = @{
+  adminConsentDescription = 'Allow the application to access the Odiscom Supply Internal API on behalf of the signed-in user.'
+  adminConsentDisplayName = 'Access Odiscom Supply Internal API'
+  id = $accessAsUserScopeId
+  isEnabled = $true
+  type = 'User'
+  userConsentDescription = 'Allow this application to access the Odiscom Supply Internal API on your behalf.'
+  userConsentDisplayName = 'Access Odiscom Supply Internal API'
+  value = 'access_as_user'
+}
+
+$patchBody = @{
+  appRoles = $appRoles
+  identifierUris = @("api://$($app.appId)")
+  api = @{
+    requestedAccessTokenVersion = 2
+    oauth2PermissionScopes = @($accessAsUserScope)
+  }
+} | ConvertTo-Json -Depth 10 -Compress
 $tmpFile = [System.IO.Path]::GetTempFileName()
 try {
   Set-Content -Path $tmpFile -Value $patchBody -Encoding UTF8 -NoNewline
@@ -129,7 +148,10 @@ foreach ($assignment in $assignments) {
 }
 
 Write-Host ''
-Write-Host 'Odiscom Supply Entra app roles are configured.' -ForegroundColor Green
+Write-Host 'Odiscom Supply Entra API roles and delegated access scope are configured.' -ForegroundColor Green
 Write-Host "Tenant: $TenantId" -ForegroundColor Yellow
 Write-Host "API client ID: $($app.appId)" -ForegroundColor Yellow
+Write-Host "Application ID URI: api://$($app.appId)" -ForegroundColor Yellow
+Write-Host 'Delegated scope: access_as_user' -ForegroundColor Yellow
+Write-Host 'Requested access token version: 2' -ForegroundColor Yellow
 Write-Host 'No Odiscom LLC app, group, tenant, SharePoint site, or os.odiscom.com resource was modified.' -ForegroundColor Green
