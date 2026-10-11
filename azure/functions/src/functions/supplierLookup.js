@@ -2,6 +2,7 @@ import { app } from '@azure/functions'
 import { loadSupplierSecrets } from '../lib/secrets.js'
 import { searchDigiKeyProduct } from '../lib/digikey.js'
 import { searchMouserProduct } from '../lib/mouser.js'
+import { authorizeInternalRequest, INTERNAL_ROLES } from '../lib/entraAuth.js'
 
 const adapters = {
   digikey: searchDigiKeyProduct,
@@ -10,9 +11,14 @@ const adapters = {
 
 app.http('supplierLookup', {
   methods: ['POST'],
-  authLevel: 'function',
+  authLevel: 'anonymous',
   route: 'supplier-connectors/{supplier}/lookup',
   handler: async (request, context) => {
+    const authorization = await authorizeInternalRequest(request, {
+      requiredRoles: [INTERNAL_ROLES.PLATFORM_ADMIN, INTERNAL_ROLES.PROCUREMENT, INTERNAL_ROLES.OPERATIONS],
+    })
+    if (!authorization.ok) return authorization.response
+
     const supplier = String(request.params.supplier || '').toLowerCase()
     const adapter = adapters[supplier]
 
@@ -51,6 +57,7 @@ app.http('supplierLookup', {
       }
     } catch (error) {
       context.error('Supplier connector lookup failed', {
+        principalObjectId: authorization.principal.objectId,
         supplier,
         manufacturer,
         mpn,
