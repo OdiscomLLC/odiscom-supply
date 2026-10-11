@@ -42,8 +42,9 @@ The API validates:
 2. token audience matches the Odiscom Supply API application;
 3. token is not expired;
 4. subject/object ID is present;
-5. required app role is present;
-6. high-risk operations also confirm the principal is active in Odiscom Supply internal role assignment data when that secondary control is enabled.
+5. required delegated scope (for user-delegated calls) is present;
+6. required app role is present;
+7. high-risk operations also confirm the principal is active in Odiscom Supply internal role assignment data when that secondary control is enabled.
 
 Do not authorize internal access by email-domain suffix alone.
 
@@ -159,6 +160,7 @@ For internal workforce tokens, the API expects:
 - `oid` — Entra object ID;
 - `aud` — Odiscom Supply API audience/client ID;
 - `roles` — assigned application roles;
+- `scp` — delegated API scopes such as `access_as_user` for human internal calls;
 - standard issuer/expiration claims.
 
 Email/UPN may be logged as a contact/display attribute but is not the canonical authorization key.

@@ -62,6 +62,7 @@ export async function authorizeInternalRequest(
   request,
   {
     requiredRoles = [],
+    requiredScopes = [],
     verifier = verifyEntraAccessToken,
   } = {},
 ) {
@@ -96,9 +97,11 @@ export async function authorizeInternalRequest(
   }
 
   const roles = Array.isArray(claims.roles) ? claims.roles : []
-  const accepted = requiredRoles.length === 0 || requiredRoles.some((role) => roles.includes(role))
+  const scopes = String(claims.scp || '').split(/\s+/).filter(Boolean)
+  const acceptedRole = requiredRoles.length === 0 || requiredRoles.some((role) => roles.includes(role))
+  const acceptedScope = requiredScopes.length === 0 || requiredScopes.every((scope) => scopes.includes(scope))
 
-  if (!accepted) {
+  if (!acceptedRole || !acceptedScope) {
     return {
       ok: false,
       response: {
@@ -118,6 +121,7 @@ export async function authorizeInternalRequest(
       objectId: claims.oid,
       subject: claims.sub || null,
       roles,
+      scopes,
       preferredUsername: claims.preferred_username || claims.upn || null,
       name: claims.name || null,
     },

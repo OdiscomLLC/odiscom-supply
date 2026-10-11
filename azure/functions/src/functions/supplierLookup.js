@@ -16,6 +16,7 @@ app.http('supplierLookup', {
   handler: async (request, context) => {
     const authorization = await authorizeInternalRequest(request, {
       requiredRoles: [INTERNAL_ROLES.PLATFORM_ADMIN, INTERNAL_ROLES.PROCUREMENT, INTERNAL_ROLES.OPERATIONS],
+      requiredScopes: ['access_as_user'],
     })
     if (!authorization.ok) return authorization.response
 
