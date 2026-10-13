@@ -1,0 +1,16 @@
+{
+  "name": "odiscom-supply-migration-loader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "load:test": "node load-azure-test.mjs"
+  },
+  "dependencies": {
+    "@azure/identity": "4.13.3",
+    "mssql": "12.7.2"
+  }
+}
