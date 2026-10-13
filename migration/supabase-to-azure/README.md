@@ -1,11 +1,56 @@
 # Supabase → Azure SQL Migration Control Pack
 
 **Odiscom Supply LLC**  
-**Snapshot baseline:** 2026-10-10
+**Snapshot baseline:** 2026-10-13
 
 This folder controls the eventual migration from the current Supabase production database to the Odiscom Supply Azure SQL database.
 
 It is designed to prevent a "copy rows and hope" migration. Every domain must reconcile before Supabase can be retired.
+
+## Rehearsal tooling
+
+Two deterministic Node 22 scripts are now included:
+
+```bash
+node migration/supabase-to-azure/export-snapshot.mjs <snapshot-directory>
+node migration/supabase-to-azure/transform-snapshot.mjs <snapshot-directory> <azure-shaped-directory>
+```
+
+### export-snapshot.mjs
+
+Uses only server-side environment variables:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+The service-role value is never written to the snapshot.
+
+The exporter:
+
+- records exact counts before export;
+- exports each migration table in stable ID order;
+- checks row counts while exporting;
+- rechecks every table count after export;
+- fails if the live source changed during the snapshot;
+- writes SHA-256 hashes for every file;
+- derives a normalized customer master from customer/quote/order/material-upload data;
+- excludes Supabase Auth credential/session material.
+
+### transform-snapshot.mjs
+
+Transforms the immutable snapshot into Azure SQL-shaped JSON without writing either source or target.
+
+It:
+
+- preserves source UUIDs when the target maps one-to-one;
+- generates deterministic IDs for normalized manufacturers, external organizations, customer contacts/locations, shipments, and payment references;
+- materializes Odiscom LLC as a normal customer with `IsRelatedCompany=true`;
+- resolves quote/order/customer ownership;
+- maps supplier/catalog/import/opportunity domains;
+- archives legacy fields that do not have a first-class target column instead of dropping them;
+- produces its own transform manifest and SHA-256 checksums.
+
+No snapshot directory should be committed to Git.
 
 ## Current production baseline
 
