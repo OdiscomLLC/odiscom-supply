@@ -41,9 +41,12 @@ CREATE TABLE migration.SourceRecordMap (
     IsGeneratedTargetId BIT NOT NULL DEFAULT 0,
     CreatedAt DATETIME2(3) NOT NULL DEFAULT SYSUTCDATETIME(),
     UpdatedAt DATETIME2(3) NOT NULL DEFAULT SYSUTCDATETIME(),
-    CONSTRAINT UQ_SourceRecordMap_Source UNIQUE (SourceSystem, SourceEntity, SourceKey),
-    CONSTRAINT UQ_SourceRecordMap_Target UNIQUE (TargetEntity, TargetId)
+    CONSTRAINT UQ_SourceRecordMap_Source UNIQUE (SourceSystem, SourceEntity, SourceKey)
 );
+GO
+
+CREATE INDEX IX_SourceRecordMap_Target
+ON migration.SourceRecordMap (TargetEntity, TargetId);
 GO
 
 CREATE TABLE migration.ReconciliationMetric (

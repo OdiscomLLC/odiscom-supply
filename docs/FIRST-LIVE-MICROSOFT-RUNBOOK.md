@@ -169,7 +169,7 @@ After infrastructure is deployed:
 
 1. `001_core_schema.sql`
 2. `002_material_upload.sql`
-3. `003_migration_control.sql`
+3. `003_migration_control.sql`\n4. `004_source_field_archive.sql`
 
 Do not load production data yet.
 
