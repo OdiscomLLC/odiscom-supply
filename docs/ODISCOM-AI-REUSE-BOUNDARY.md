@@ -7,7 +7,7 @@
 
 Odiscom Supply may reuse **generic engineering patterns and code techniques** from Odiscom AI.
 
-Odiscom Supply may **not** reuse Odiscom LLC tenant-specific resources, identities, permissions, data, secrets, SharePoint sites, DNS, resource groups, subscriptions, app registrations, or runtime dependencies unless a separate intercompany integration is explicitly approved.
+Odiscom Supply may share a reviewed Azure subscription or selected infrastructure services with Odiscom LLC when expressly approved, provided tenant association, identity isolation, cost allocation, RBAC and production impact are documented in `SHARED-AZURE-RESOURCE-DECISION.md`. Company-owned data, identities, secrets, SharePoint permissions, DNS and existing production services are never implicitly shared. Generic engineering patterns remain reusable.
 
 ## Reuse these patterns
 

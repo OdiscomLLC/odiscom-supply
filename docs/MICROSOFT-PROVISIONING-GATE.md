@@ -32,8 +32,8 @@ The scripts intentionally refuse to run if the authenticated tenant ID does not 
 
 Before infrastructure deployment:
 
-- Azure subscription is explicitly approved for Odiscom Supply use;
-- Odiscom Supply resource group created;
+- Azure subscription is explicitly approved for Odiscom Supply use (it may be a shared subscription after separate legal-payer, RBAC, tenant-association and cost-allocation review per `SHARED-AZURE-RESOURCE-DECISION.md`);
+- Odiscom Supply resource group created or independently scoped in a reviewed shared-service design;
 - Azure DevOps service connection uses workload identity federation;
 - SQL Entra administrator group belongs to Odiscom Supply;
 - deployment secrets live in Azure DevOps secret variables / Key Vault;
