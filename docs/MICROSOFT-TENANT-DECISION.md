@@ -110,9 +110,10 @@ External users should not be granted broad access to the internal SharePoint sit
 ## Azure
 
 Preferred ownership:
-- Azure subscription/billing associated with Odiscom Supply tenant.
+- Odiscom Supply workforce tenant remains separate, while Azure subscription/billing and selected infrastructure may be shared with Odiscom LLC by explicit approval. See `SHARED-AZURE-RESOURCE-DECISION.md`.
+- Subscription-to-Entra-tenant association and deployment credentials must be validated before using any shared subscription; a subscription is associated with one Entra tenant at a time.
 
-If Azure billing is ever shared operationally, resources must still be isolated by:
+When Azure resources are shared operationally, maintain company-level separation through:
 - subscription/resource group;
 - managed identity;
 - Key Vault;
