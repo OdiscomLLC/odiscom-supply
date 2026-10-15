@@ -38,9 +38,9 @@ For every shared Azure platform or subscription, record:
 
 ## Current migration readiness (2026-10-15)
 
-- Odiscom Supply workforce tenant: `c00994ec-2a2f-41cd-bbe9-612e6db86ed0` (confirmed in Azure portal).
-- AzureSignup billing account is active but its **Sold-to** details still identify the individual; the browser form fails to persist corrected data.
-- Microsoft support case **2610150040006205** has been submitted for legal Sold-to correction and billing email verification. No new Azure production subscription has been confirmed created.
+- Odiscom Supply workforce Entra tenant confirmed; resolve the tenant ID only from approved environment configuration during deployment.
+- Azure billing/legal ownership is under review. Confirm the approved payer, billing authority and subscription ownership before provisioning; keep support identifiers and billing records out of this repository.
+- No new Azure production subscription has been confirmed created.
 - Existing GitHub `main` at `13aa8cab08aaab349ac9ed960117963c44a3111d` contains Azure SQL schema, TEST-only SQL rehearsal loader, TEST-only Blob migrator and Bicep App Service/Functions/SQL foundation. These are source artifacts **not evidence of a successful Azure deployment**.
 - Draft PR [#31](https://github.com/OdiscomLLC/odiscom-supply/pull/31) proposes an alternative Container Apps Docker deployment retaining Supabase temporarily. Do not merge it just to unblock the migration; select App Service + full Microsoft migration versus phased Container Apps transition, then validate build, billing, and rollback.
 - Current file migration documentation flags a historical supplier-import workbook whose binary lacks a retrievable storage reference. The normalized import rows are preserved; recover the original XLSX separately if it must be archived.
