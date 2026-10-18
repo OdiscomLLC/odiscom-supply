@@ -32,10 +32,11 @@ The scripts intentionally refuse to run if the authenticated tenant ID does not 
 
 Before infrastructure deployment:
 
-- Azure subscription is explicitly approved for Odiscom Supply use;
-- Odiscom Supply resource group created;
+- Azure subscription is explicitly approved for Odiscom Supply use (it may be a shared subscription after separate legal-payer, RBAC, tenant-association and cost-allocation review per `SHARED-AZURE-RESOURCE-DECISION.md`);
+- Odiscom Supply resource group created or independently scoped in a reviewed shared-service design;
 - Azure DevOps service connection uses workload identity federation;
-- SQL Entra administrator group belongs to Odiscom Supply;
+- SQL Entra administrator group must be valid in the Azure subscription's associated Entra tenant; when using Odiscom LLC's subscription, verify the required B2B/cross-tenant access and SQL administrator eligibility instead of passing an Odiscom Supply tenant principal ID into a foreign-tenant SQL resource. No Odiscom LLC staff or app gets Supply data access by default;
+- before deploying the existing Bicep, verify `tenantId`, SQL Entra admin SID, managed identities, Azure DevOps service connection and Key Vault RBAC are consistent with the actual subscription tenant; do not bypass the tenant check;
 - deployment secrets live in Azure DevOps secret variables / Key Vault;
 - no Odiscom AI resource group or Key Vault is reused.
 
