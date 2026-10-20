@@ -19,6 +19,8 @@ variables:
   # sqlEntraAdminLogin: '<entra-group-display-name>'
   # sqlEntraAdminObjectId: '<entra-group-object-id>'
   # sqlBootstrapPassword: secret variable only
+  # ODISCOM_TEST_DEPLOYMENT_APPROVED: set to 'true' only for a reviewed TEST run
+  # ODISCOM_APPROVED_SUBSCRIPTION_ID, ODISCOM_APPROVED_TENANT_ID and ODISCOM_TEST_RESOURCE_GROUP: approved identifiers
 
 stages:
   - stage: Validate
@@ -55,13 +57,54 @@ stages:
               npm test
             displayName: Install and test Functions package
 
-  - stage: DeployTest
-    displayName: Deploy test foundation
+  # Azure deployment is opt-in only: explicitly queue a manual run with the
+  # reviewed scope variables and approval flag. A normal push only validates.
+  - stage: PlanTest
+    displayName: Review Azure TEST infrastructure what-if
     dependsOn: Validate
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'Manual'), eq(variables['ODISCOM_TEST_DEPLOYMENT_APPROVED'], 'true'))
     jobs:
+      - job: PlanFoundation
+        displayName: Verify identity and plan changes
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            displayName: Verify TEST scope and perform what-if
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az account show --output json | node scripts/microsoft/assert-azure-test-context.mjs
+                az deployment group what-if \
+                  --resource-group "$ODISCOM_TEST_RESOURCE_GROUP" \
+                  --template-file "$(bicepFile)" \
+                  --parameters \
+                    environment=test \
+                    sqlEntraAdminLogin="$SQL_ENTRA_ADMIN_LOGIN" \
+                    sqlEntraAdminObjectId="$SQL_ENTRA_ADMIN_OBJECT_ID" \
+                    sqlBootstrapPassword="$SQL_BOOTSTRAP_PASSWORD"
+            env:
+              ODISCOM_APPROVED_SUBSCRIPTION_ID: $(ODISCOM_APPROVED_SUBSCRIPTION_ID)
+              ODISCOM_APPROVED_TENANT_ID: $(ODISCOM_APPROVED_TENANT_ID)
+              ODISCOM_TEST_RESOURCE_GROUP: $(resourceGroupName)
+              ODISCOM_TEST_DEPLOYMENT_APPROVED: $(ODISCOM_TEST_DEPLOYMENT_APPROVED)
+              SQL_ENTRA_ADMIN_LOGIN: $(sqlEntraAdminLogin)
+              SQL_ENTRA_ADMIN_OBJECT_ID: $(sqlEntraAdminObjectId)
+              SQL_BOOTSTRAP_PASSWORD: $(sqlBootstrapPassword)
+
+  - stage: DeployTest
+    displayName: Deploy approved Azure TEST foundation
+    dependsOn: PlanTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'], 'Manual'), eq(variables['ODISCOM_TEST_DEPLOYMENT_APPROVED'], 'true'))
+    jobs:
+      # Configure Azure DevOps Environment "odiscom-supply-test" approvals/checks
+      # before ever setting the approval flag to true.
       - deployment: DeployFoundation
-        displayName: Deploy Odiscom Supply test infrastructure
+        displayName: Deploy reviewed TEST infrastructure
         environment: 'odiscom-supply-test'
         pool:
           vmImage: ubuntu-latest
@@ -71,20 +114,28 @@ stages:
               steps:
                 - checkout: self
                 - task: AzureCLI@2
-                  displayName: What-if
+                  displayName: Revalidate TEST scope immediately before deployment
                   inputs:
                     azureSubscription: '$(azureServiceConnection)'
                     scriptType: bash
                     scriptLocation: inlineScript
                     inlineScript: |
                       set -euo pipefail
-                      az deployment group what-if                         --resource-group "$(resourceGroupName)"                         --template-file "$(bicepFile)"                         --parameters                           environment=test                           sqlEntraAdminLogin="$(sqlEntraAdminLogin)"                           sqlEntraAdminObjectId="$(sqlEntraAdminObjectId)"                           sqlBootstrapPassword="$(sqlBootstrapPassword)"
-                - task: AzureCLI@2
-                  displayName: Deploy
-                  inputs:
-                    azureSubscription: '$(azureServiceConnection)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      set -euo pipefail
-                      az deployment group create                         --resource-group "$(resourceGroupName)"                         --template-file "$(bicepFile)"                         --parameters                           environment=test                           sqlEntraAdminLogin="$(sqlEntraAdminLogin)"                           sqlEntraAdminObjectId="$(sqlEntraAdminObjectId)"                           sqlBootstrapPassword="$(sqlBootstrapPassword)"                         --name "odiscom-supply-$(Build.BuildId)"
+                      az account show --output json | node scripts/microsoft/assert-azure-test-context.mjs
+                      az deployment group create \
+                        --resource-group "$ODISCOM_TEST_RESOURCE_GROUP" \
+                        --template-file "$(bicepFile)" \
+                        --parameters \
+                          environment=test \
+                          sqlEntraAdminLogin="$SQL_ENTRA_ADMIN_LOGIN" \
+                          sqlEntraAdminObjectId="$SQL_ENTRA_ADMIN_OBJECT_ID" \
+                          sqlBootstrapPassword="$SQL_BOOTSTRAP_PASSWORD" \
+                        --name "odiscom-supply-$(Build.BuildId)"
+                  env:
+                    ODISCOM_APPROVED_SUBSCRIPTION_ID: $(ODISCOM_APPROVED_SUBSCRIPTION_ID)
+                    ODISCOM_APPROVED_TENANT_ID: $(ODISCOM_APPROVED_TENANT_ID)
+                    ODISCOM_TEST_RESOURCE_GROUP: $(resourceGroupName)
+                    ODISCOM_TEST_DEPLOYMENT_APPROVED: $(ODISCOM_TEST_DEPLOYMENT_APPROVED)
+                    SQL_ENTRA_ADMIN_LOGIN: $(sqlEntraAdminLogin)
+                    SQL_ENTRA_ADMIN_OBJECT_ID: $(sqlEntraAdminObjectId)
+                    SQL_BOOTSTRAP_PASSWORD: $(sqlBootstrapPassword)
