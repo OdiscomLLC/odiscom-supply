@@ -1,0 +1,31 @@
+name: Azure TEST image validation
+
+on:
+  push:
+    branches:
+      - deploy/azure-container-apps-test-20261020
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out isolated TEST branch
+        uses: actions/checkout@v4
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Verify Next.js build
+        run: npm run build
+      - name: Validate container image build without publishing
+        run: docker build --tag odiscom-supply:test .
