@@ -73,6 +73,20 @@ stages:
               steps:
                 - checkout: self
                 - task: AzureCLI@2
+                  displayName: Verify approved TEST tenant and subscription
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      az account show --output json | node scripts/microsoft/assert-azure-test-context.mjs
+                  env:
+                    ODISCOM_APPROVED_SUBSCRIPTION_ID: $(ODISCOM_APPROVED_SUBSCRIPTION_ID)
+                    ODISCOM_APPROVED_TENANT_ID: $(ODISCOM_APPROVED_TENANT_ID)
+                    ODISCOM_TEST_RESOURCE_GROUP: $(resourceGroupName)
+                    ODISCOM_TEST_DEPLOYMENT_APPROVED: $(ODISCOM_TEST_DEPLOYMENT_APPROVED)
+                - task: AzureCLI@2
                   displayName: What-if
                   inputs:
                     azureSubscription: '$(azureServiceConnection)'
