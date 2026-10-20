@@ -19,6 +19,8 @@ variables:
   # sqlEntraAdminLogin: '<entra-group-display-name>'
   # sqlEntraAdminObjectId: '<entra-group-object-id>'
   # sqlBootstrapPassword: secret variable only
+  # ODISCOM_TEST_DEPLOYMENT_APPROVED: set to 'true' only for a reviewed TEST run
+  # ODISCOM_APPROVED_SUBSCRIPTION_ID, ODISCOM_APPROVED_TENANT_ID and ODISCOM_TEST_RESOURCE_GROUP: approved identifiers
 
 stages:
   - stage: Validate
@@ -58,7 +60,7 @@ stages:
   - stage: DeployTest
     displayName: Deploy test foundation
     dependsOn: Validate
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['ODISCOM_TEST_DEPLOYMENT_APPROVED'], 'true'))
     jobs:
       - deployment: DeployFoundation
         displayName: Deploy Odiscom Supply test infrastructure
@@ -78,6 +80,11 @@ stages:
                     scriptLocation: inlineScript
                     inlineScript: |
                       set -euo pipefail
+                      export ODISCOM_TEST_DEPLOYMENT_APPROVED="$(ODISCOM_TEST_DEPLOYMENT_APPROVED)"
+                      export ODISCOM_APPROVED_SUBSCRIPTION_ID="$(ODISCOM_APPROVED_SUBSCRIPTION_ID)"
+                      export ODISCOM_APPROVED_TENANT_ID="$(ODISCOM_APPROVED_TENANT_ID)"
+                      export ODISCOM_TEST_RESOURCE_GROUP="$(resourceGroupName)"
+                      az account show --output json | node scripts/microsoft/assert-azure-test-context.mjs
                       az deployment group what-if                         --resource-group "$(resourceGroupName)"                         --template-file "$(bicepFile)"                         --parameters                           environment=test                           sqlEntraAdminLogin="$(sqlEntraAdminLogin)"                           sqlEntraAdminObjectId="$(sqlEntraAdminObjectId)"                           sqlBootstrapPassword="$(sqlBootstrapPassword)"
                 - task: AzureCLI@2
                   displayName: Deploy
@@ -87,4 +94,5 @@ stages:
                     scriptLocation: inlineScript
                     inlineScript: |
                       set -euo pipefail
+                      az account show --output json | node scripts/microsoft/assert-azure-test-context.mjs
                       az deployment group create                         --resource-group "$(resourceGroupName)"                         --template-file "$(bicepFile)"                         --parameters                           environment=test                           sqlEntraAdminLogin="$(sqlEntraAdminLogin)"                           sqlEntraAdminObjectId="$(sqlEntraAdminObjectId)"                           sqlBootstrapPassword="$(sqlBootstrapPassword)"                         --name "odiscom-supply-$(Build.BuildId)"
