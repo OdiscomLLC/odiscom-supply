@@ -22,3 +22,17 @@ The existing `ca-odiscom-supply-test` failed with GHCR authentication. Changing 
 ## Other migration gates
 
 This is only an image delivery improvement, **not** completion of Azure SQL, Blob, Entra/SharePoint, customer/supplier auth, payment integration or production cutover. Keep the historical source snapshot/reconciliation controls. Odiscom LLC remains a separate customer of Odiscom Supply, and `os.odiscom.com` is out of scope.
+
+## Read-only existing-resource diagnostic
+
+Once the approved TEST subscription and existing ACR are known, run the read-only inspection script from an authenticated administrator shell:
+
+```bash
+export AZURE_TEST_SUBSCRIPTION_ID='<approved-subscription-uuid>'
+export AZURE_TEST_ACR_NAME='<registry-name>'
+bash scripts/microsoft/check-container-app-acr-test.sh
+```
+
+The script does **not** create the registry, update a Container App revision, change registry credentials, grant RBAC or change DNS. It checks that the active subscription matches the approved ID; the ACR belongs to that subscription; and the existing `rg-odiscom-supply-test/ca-odiscom-supply-test` app's identities, registry references and current AcrPull assignments can be reviewed. A missing ACR is a legitimate stopping condition, not an invitation to create a production resource automatically.
+
+Do not publish or deploy the image until a verified service identity and explicit budget/payer acceptance are in place.
