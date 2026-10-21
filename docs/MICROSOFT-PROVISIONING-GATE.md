@@ -65,6 +65,7 @@ Apply in order:
 1. `database/azure-sql/001_core_schema.sql`
 2. `database/azure-sql/002_material_upload.sql`
 3. `database/azure-sql/003_migration_control.sql`
+4. `database/azure-sql/004_source_field_archive.sql`
 
 Then run the target audit.
 
