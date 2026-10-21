@@ -31,16 +31,15 @@ stages:
         pool:
           vmImage: ubuntu-latest
         steps:
-          - task: AzureCLI@2
-            displayName: Build Bicep
-            inputs:
-              azureSubscription: '$(azureServiceConnection)'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -euo pipefail
-                az bicep build --file "$(bicepFile)" --stdout > /tmp/odiscom-supply-foundation.json
-                test -s /tmp/odiscom-supply-foundation.json
+          # Compilation is a local operation: do not require Azure credentials here.
+          # The service connection is intentionally reserved for manual TEST plan/deploy.
+          - script: |
+              set -euo pipefail
+              az bicep install
+              az bicep build --file "$(bicepFile)" --stdout > /tmp/odiscom-supply-foundation.json
+              test -s /tmp/odiscom-supply-foundation.json
+              python3 -m json.tool /tmp/odiscom-supply-foundation.json > /dev/null
+            displayName: Build Bicep (no Azure service connection)
 
       - job: ValidateFunctions
         displayName: Validate Azure Functions
