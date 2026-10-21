@@ -1,0 +1,67 @@
+name: Prepare Azure TEST image in ACR
+
+# No deployment to the Container App. Registry/image publish requires a
+# deliberate manual dispatch and federated Azure credentials for TEST.
+on:
+  workflow_dispatch:
+    inputs:
+      publish_image:
+        description: "Type YES to build and publish TEST image to approved ACR"
+        required: true
+        type: choice
+        options: ["NO", "YES"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-and-publish:
+    if: github.repository == 'OdiscomLLC/odiscom-supply' && inputs.publish_image == 'YES'
+    runs-on: ubuntu-latest
+    environment: odiscom-supply-test-acr
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated TEST source
+        run: |
+          set -euo pipefail
+          test -f Dockerfile
+          test -f package-lock.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Run application tests and build
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Azure login using federated TEST identity
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_TEST_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TEST_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_TEST_SUBSCRIPTION_ID }}
+      - name: Check scope and publish via ACR Tasks
+        shell: bash
+        env:
+          APPROVED_SUBSCRIPTION: ${{ secrets.AZURE_TEST_SUBSCRIPTION_ID }}
+          APPROVED_TENANT: ${{ secrets.AZURE_TEST_TENANT_ID }}
+          APPROVED_REGISTRY: ${{ vars.AZURE_TEST_ACR_NAME }}
+        run: |
+          set -euo pipefail
+          test -n "$APPROVED_REGISTRY"
+          [[ "$APPROVED_REGISTRY" =~ ^[a-zA-Z0-9]{5,50}$ ]]
+          test "$(az account show --query id -o tsv | tr '[:upper:]' '[:lower:]')" = "$(echo "$APPROVED_SUBSCRIPTION" | tr '[:upper:]' '[:lower:]')"
+          test "$(az account show --query tenantId -o tsv | tr '[:upper:]' '[:lower:]')" = "$(echo "$APPROVED_TENANT" | tr '[:upper:]' '[:lower:]')"
+          test "$(az account show --query state -o tsv)" = "Enabled"
+          ACR_ID="$(az acr show --name "$APPROVED_REGISTRY" --query id -o tsv)"
+          case "$ACR_ID" in
+            "/subscriptions/$APPROVED_SUBSCRIPTION/"*) ;;
+            *) echo "ACR is outside approved TEST subscription" >&2; exit 1 ;;
+          esac
+          IMAGE_TAG="azure-test-${GITHUB_SHA}"
+          az acr build --registry "$APPROVED_REGISTRY" --image "odiscom-supply:${IMAGE_TAG}" --file Dockerfile .
+          echo "Published: ${APPROVED_REGISTRY}.azurecr.io/odiscom-supply:${IMAGE_TAG}"
+          echo "NOT deployed to Azure Container Apps; managed identity AcrPull must be configured separately."
